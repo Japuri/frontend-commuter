@@ -1,0 +1,5 @@
+[
+  { "id": 1, "user_id": 1, "town_id": 1, "selected_at": "2025-12-13T13:20:00Z", "additional": 0 },
+  { "id": 2, "user_id": 1, "town_id": 3, "selected_at": "2025-12-13T13:20:30Z", "additional": 0 },
+  { "id": 3, "user_id": 2, "town_id": 2, "selected_at": "2025-12-10T08:05:00Z", "additional": 0 }
+]

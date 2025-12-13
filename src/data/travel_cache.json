@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "town_id": 1,
+    "traffic_data": { "congestion_level": "moderate", "avg_speed_kph": 24 },
+    "created_at": "2025-12-13T12:50:00Z",
+    "updated_at": "2025-12-13T12:55:00Z",
+    "additional": 0
+  },
+  {
+    "id": 2,
+    "town_id": 3,
+    "traffic_data": { "congestion_level": "heavy", "avg_speed_kph": 18 },
+    "created_at": "2025-12-13T12:50:00Z",
+    "updated_at": "2025-12-13T12:55:00Z",
+    "additional": 0
+  },
+  {
+    "id": 3,
+    "town_id": 2,
+    "traffic_data": { "congestion_level": "light", "avg_speed_kph": 32 },
+    "created_at": "2025-12-13T12:50:00Z",
+    "updated_at": "2025-12-13T12:55:00Z",
+    "additional": 0
+  },
+  {
+    "id": 4,
+    "town_id": 4,
+    "traffic_data": { "congestion_level": "severe", "avg_speed_kph": 12 },
+    "created_at": "2025-12-13T12:50:00Z",
+    "updated_at": "2025-12-13T12:55:00Z",
+    "additional": 0
+  },
+  {
+    "id": 5,
+    "town_id": 5,
+    "traffic_data": { "congestion_level": "moderate", "avg_speed_kph": 22 },
+    "created_at": "2025-12-13T12:50:00Z",
+    "updated_at": "2025-12-13T12:55:00Z",
+    "additional": 0
+  }
+]

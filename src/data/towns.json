@@ -1,0 +1,7 @@
+[
+  { "id": 1, "name": "Angeles City", "street": "MacArthur Hwy", "lat": 15.144, "lng": 120.591, "additional": 0 },
+  { "id": 2, "name": "Mabalacat", "street": "McArthur Service Rd", "lat": 15.223, "lng": 120.571, "additional": 0 },
+  { "id": 3, "name": "San Fernando", "street": "Olongapo-Gapan Rd", "lat": 15.037, "lng": 120.684, "additional": 0 },
+  { "id": 4, "name": "Lubao", "street": "Jose Abad Santos Ave", "lat": 14.940, "lng": 120.601, "additional": 0 },
+  { "id": 5, "name": "Mexico", "street": "San Fernando-Mexico Rd", "lat": 15.064, "lng": 120.722, "additional": 0 }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "subscription_id": 1,
+    "paypal_payment_id": "PAY-AAA",
+    "amount": 99.0,
+    "currency": "PHP",
+    "payment_date": "2025-12-01T01:00:00Z",
+    "status": "completed"
+  },
+  {
+    "id": 2,
+    "subscription_id": 2,
+    "paypal_payment_id": "PAY-BBB",
+    "amount": 99.0,
+    "currency": "PHP",
+    "payment_date": "2025-11-01T01:00:00Z",
+    "status": "refunded"
+  }
+]
