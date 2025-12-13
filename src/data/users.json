@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "username": "student01",
+    "email": "student01@gmail.com",
+    "password" : "user123",
+    "password_hash": "hashed_pw",
+    "is_premium": false,
+    "created_at": "2025-12-13T13:10:00Z",
+    "updated_at": "2025-12-13T13:10:00Z",
+    "location_at": 1,
+    "additional": 0
+  },
+  {
+    "id": 2,
+    "username": "student02",
+    "email": "student02@gmail.com",
+    "password" : "admin123",
+    "password_hash": "hashed_pw",
+    "is_premium": true,
+    "created_at": "2025-12-10T08:00:00Z",
+    "updated_at": "2025-12-13T08:00:00Z",
+    "location_at": 3,
+    "additional": 0
+  }
+]

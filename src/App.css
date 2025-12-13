@@ -1,0 +1,372 @@
+:root {
+  --bg: #0b0f14;
+  --panel: #121822;
+  --panel-2: #0e141c;
+  --text: #c7d1db;
+  --muted: #7a8a99;
+  --neon: #00d4ff;
+  --neon-soft: #74e9ff;
+  --warning: #f9c74f;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  margin: 0;
+}
+
+body {
+  color: var(--text);
+  font-family: Inter, Segoe UI, system-ui, -apple-system, sans-serif;
+}
+
+.jeeproute-container {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+  height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.jeeproute-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.jeeproute-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.brand {
+  color: var(--neon);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-neon-outline {
+  border: 1px solid var(--neon);
+  color: var(--neon);
+  background: transparent;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  transition: 0.2s ease;
+}
+.btn-neon-outline:hover {
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.btn-neon-fill {
+  background: linear-gradient(135deg, var(--neon), var(--neon-soft));
+  color: #061018;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.25);
+}
+.btn-neon-fill:hover {
+  filter: brightness(1.08);
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.plan-card {
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid #1e2631;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+  color: #dbe6ef;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.plan-card.free {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.plan-card.plus {
+  border: 1px solid var(--neon);
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.35);
+}
+
+.plan-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--neon);
+  margin-bottom: 6px;
+}
+
+.premium-desc {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.btn-upgrade {
+  background: linear-gradient(135deg, var(--warning), #ffd97a);
+  color: #2a2008;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(249, 199, 79, 0.45);
+  cursor: pointer;
+  align-self: flex-start;
+}
+.btn-upgrade:hover {
+  filter: brightness(1.05);
+}
+
+
+.form-label {
+  color: #a9c3d7;
+  font-size: 13px;
+}
+
+.form-select {
+  background: #0a1219;
+  color: #d3dee7;
+  border: 1px solid #243041;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.form-select:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+}
+
+.jeeproute-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.jeeproute-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid #1e2631;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+.jeeproute-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 350px; 
+  gap: 24px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.details-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 60px);
+  padding: 20px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.details-card {
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid #1e2631;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.25);
+  color: #dbe6ef;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.details-card.free {
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+.details-card.plus {
+  border: 1px solid var(--neon);
+  box-shadow: 0 0 22px rgba(0, 212, 255, 0.35);
+}
+
+
+.login-wrapper {
+  background: var(--bg);
+}
+
+.login-card {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 20px 30px;
+  background: var(--bg-dark);
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.4);
+}
+
+.login-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.login-input {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--neon);
+  background: #111;
+  color: #fff;
+}
+
+.login-btn {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--neon);
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-btn:hover {
+  background: #fff;
+  color: var(--neon);
+}
+
+.login-footer {
+  margin-top: 15px;
+  color: var(--muted);
+}
+
+.signup-link {
+  color: var(--neon);
+  cursor: pointer;
+}
+
+.floating-back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: transparent;
+  border: 1px solid var(--neon);
+  color: var(--neon);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.floating-back-btn:hover {
+  background: var(--neon);
+  color: var(--bg);
+  box-shadow: 0 0 10px var(--neon-soft);
+}
+
+.jeeproute-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #0d0d0d;
+}
+
+.jeeproute-container {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  padding: 20px;
+  height: calc(100vh - 80px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.jeeproute-left {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.jeeproute-map {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(28, 240, 255, 0.973);
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.payment-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.paypal-mock {
+  background: #111;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0,255,204,0.4);
+}
+
+.paypal-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #00aaff;
+  margin-bottom: 10px;
+}
+
+.payment-summary {
+  margin: 15px 0;
+  font-size: 1rem;
+  color: #ccc;
+}
+
+
