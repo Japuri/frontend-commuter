@@ -30,9 +30,13 @@ function LoginScreen({ setCurrentUser }) {
 
   return (
     <div className="login-wrapper">
-      <button className="floating-back-btn" onClick={() => navigate('/')}>← Home</button>
+      <button className="floating-back-btn" onClick={() => navigate("/")}>
+        ← Home
+      </button>
       <div className="login-card">
-        <h2 className="login-title">Welcome to <span className="brand">JeepRoute</span></h2>
+        <h2 className="login-title">
+          Welcome to <span className="brand">JeepRoute</span>
+        </h2>
         <form onSubmit={handleLogin} className="login-form">
           <input
             type="text"
@@ -53,11 +57,17 @@ function LoginScreen({ setCurrentUser }) {
           </button>
         </form>
 
-        {error && <p className="error-msg" style={{ color: '#f55', marginTop: 10 }}>{error}</p>}
-        
+        {error && (
+          <p className="error-msg" style={{ color: "#f55", marginTop: 10 }}>
+            {error}
+          </p>
+        )}
+
         <div className="login-footer">
-          Don't have an account?{' '}
-          <span className="signup-link" onClick={() => navigate('/signup')}>Sign Up</span>
+          Don't have an account?{" "}
+          <span className="signup-link" onClick={() => navigate("/signup")}>
+            Sign Up
+          </span>
         </div>
       </div>
     </div>

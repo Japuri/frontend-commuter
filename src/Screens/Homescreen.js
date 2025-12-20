@@ -63,7 +63,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
   return (
     <div className="jeeproute-page">
       <div className="jeeproute-navbar">
-        <div className="brand">JeepRoute</div>
+        <div className="brand">
+          JeepRoute{" "}
+          <button className="btn-upgrade" onClick={() => navigate("/details")}>
+            Plans
+          </button>{" "}
+        </div>
         <div className="header-actions">
           {!loggedIn && (
             <>
@@ -83,13 +88,15 @@ function Homescreen({ currentUser, setCurrentUser }) {
           )}
           {loggedIn && (
             <>
-              <span className="welcome-msg" style={{ marginRight: 12 }}>Hi, {currentUser?.email || 'User'}</span>
+              <span className="welcome-msg" style={{ marginRight: 12 }}>
+                Hi, {currentUser?.email || "User"}
+              </span>
               <button
                 className="btn-neon-outline"
                 onClick={() => {
                   setCurrentUser(null);
-                  localStorage.removeItem('currentUser');
-                  navigate('/');
+                  localStorage.removeItem("currentUser");
+                  navigate("/");
                 }}
               >
                 Logout
@@ -98,99 +105,102 @@ function Homescreen({ currentUser, setCurrentUser }) {
           )}
         </div>
       </div>
+      <div className="jeeprout-layout">
+        <div className="jeeproute-container">
+          <div className="jeeproute-left">
+            <div className="subtitle">
+              Smart Jeepney Planning for Pampanga Students
+            </div>
+            <div className="sidebar">
+              <div className="plan-card free">
+                <div className="plan-header">Select Route</div>
+                <TownSelector
+                  towns={towns}
+                  startTown={startTown}
+                  endTown={endTown}
+                  setStartTown={setStartTown}
+                  setEndTown={setEndTown}
+                  layout="start"
+                />
+                <TownSelector
+                  towns={towns}
+                  startTown={startTown}
+                  endTown={endTown}
+                  setStartTown={setStartTown}
+                  setEndTown={setEndTown}
+                  layout="end"
+                />
+              </div>
 
-      <div className="jeeproute-container">
-        <div className="jeeproute-left">
-          <div className="subtitle">
-            Smart Jeepney Planning for Pampanga Students
-          </div>
+              {estimation && (
+                <div className="plan-card free">
+                  <div className="plan-header">Travel Estimation</div>
+                  <p className="included">
+                    Estimated Time: {estimation.minutes} mins
+                  </p>
+                  <p className="included">
+                    Distance: {estimation.distanceKm} km
+                  </p>
+                  {currentUser?.is_premium && (
+                    <>
+                      <p className="premium-desc">
+                        Weather: {estimation.weather}
+                        <br />
+                        Traffic: {estimation.traffic}
+                        <br />
+                        Rationale: {estimation.rationale}
+                      </p>
+                      <p className="premium-extra">
+                        ✨ Premium Insights: AI delay prediction & optimal
+                        departure time (mock data)
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
 
-          <div className="plan-card free">
-            <div className="plan-header">Select Route</div>
-            <TownSelector
-              towns={towns}
-              startTown={startTown}
-              endTown={endTown}
-              setStartTown={setStartTown}
-              setEndTown={setEndTown}
-              layout="start"
-            />
-            <TownSelector
-              towns={towns}
-              startTown={startTown}
-              endTown={endTown}
-              setStartTown={setStartTown}
-              setEndTown={setEndTown}
-              layout="end"
-            />
-          </div>
-
-          {estimation && (
-            <div className="plan-card free">
-              <div className="plan-header">Travel Estimation</div>
-              <p className="included">
-                Estimated Time: {estimation.minutes} mins
-              </p>
-              <p className="included">Distance: {estimation.distanceKm} km</p>
               {currentUser?.is_premium && (
-                <>
+                <div className="plan-card plus">
+                  <div className="plan-header">Premium Active</div>
                   <p className="premium-desc">
-                    Weather: {estimation.weather}
-                    <br />
-                    Traffic: {estimation.traffic}
-                    <br />
-                    Rationale: {estimation.rationale}
+                    You’re enjoying JeepRoute Plus features 🎉
                   </p>
-                  <p className="premium-extra">
-                    ✨ Premium Insights: AI delay prediction & optimal departure
-                    time (mock data)
-                  </p>
-                </>
+                </div>
               )}
             </div>
-          )}
+          </div>
 
-
-
-
-          {currentUser?.is_premium && (
-            <div className="plan-card plus">
-              <div className="plan-header">Premium Active</div>
-              <p className="premium-desc">
-                You’re enjoying JeepRoute Plus features 🎉
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="jeeproute-map">
-          {estimation?.start && estimation?.end ? (
-            <MapContainer
-              center={[estimation.start.lat, estimation.start.lng]}
-              zoom={9.95}
-              style={{ height: "550px", width: "100%" }}
-              scrollWheelZoom={false}
-              dragging={false}
-              zoomControl={false}
-              doubleClickZoom={false}
-              touchZoom={true}
-              boxZoom={false}
-              minZoom={9.95}
-              maxZoom={11}
-            >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[estimation.start.lat, estimation.start.lng]} />
-              <Marker position={[estimation.end.lat, estimation.end.lng]} />
-              <Polyline
-                positions={[
-                  [estimation.start.lat, estimation.start.lng],
-                  [estimation.end.lat, estimation.end.lng],
-                ]}
-              />
-            </MapContainer>
-          ) : (
-            <p className="map-placeholder">Selected route shows here</p>
-          )}
+          <div className="jeeproute-map">
+            {estimation?.start && estimation?.end ? (
+              <MapContainer
+                center={[estimation.start.lat, estimation.start.lng]}
+                zoom={9.95}
+                style={{ height: "550px", width: "100%" }}
+                scrollWheelZoom={false}
+                dragging={false}
+                zoomControl={false}
+                doubleClickZoom={false}
+                touchZoom={true}
+                boxZoom={false}
+                minZoom={9.95}
+                maxZoom={11}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker
+                  position={[estimation.start.lat, estimation.start.lng]}
+                />
+                <Marker position={[estimation.end.lat, estimation.end.lng]} />
+                <Polyline
+                  positions={[
+                    [estimation.start.lat, estimation.start.lng],
+                    [estimation.end.lat, estimation.end.lng],
+                  ]}
+                />
+              </MapContainer>
+            ) : (
+              <p className="map-placeholder">Selected route shows here</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
