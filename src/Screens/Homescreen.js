@@ -19,6 +19,42 @@ import distances from "../data/distances.json";
 import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet";
 
 function Homescreen({ currentUser, setCurrentUser }) {
+    // AI Suggestion state for premium users
+    const [aiSuggestion, setAiSuggestion] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState("");
+    const handleActivateAIMode = async () => {
+      if (!estimation || !currentUser?.is_premium) return;
+      setAiLoading(true);
+      setAiError("");
+      setAiSuggestion(null);
+      try {
+        // Compose payload for backend
+        const payload = {
+          weather: estimation.weatherData || {},
+          traffic: estimation.trafficData || {},
+          distance: estimation.distanceKm,
+          time_of_day: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        // Use JWT or session auth if needed
+        const resp = await fetch("http://localhost:8000/api/ai-suggestion/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Add auth header if needed
+          },
+          credentials: "include",
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) throw new Error("AI suggestion failed: " + (await resp.text()));
+        const data = await resp.json();
+        setAiSuggestion(data);
+      } catch (e) {
+        setAiError(e.message || "AI error");
+      } finally {
+        setAiLoading(false);
+      }
+    };
   const [startTown, setStartTown] = useState("");
   const [endTown, setEndTown] = useState("");
   const [towns, setTowns] = useState([]);
@@ -259,9 +295,21 @@ function Homescreen({ currentUser, setCurrentUser }) {
                             <div className="badge badge-warn">Confidence: {confidence}</div>
                             <div className="badge badge-info">✨ Premium Insights enabled</div>
                           </div>
-                          <div className="premium-desc" style={{ marginTop: 8, color: '#7fa2bd' }}>
-                            Ai Rationale Here
+                          <div style={{ marginTop: 16 }}>
+                            <button className="btn-neon-fill" style={{ minWidth: 180 }} onClick={handleActivateAIMode} disabled={aiLoading}>
+                              {aiLoading ? 'Loading AI Suggestion...' : 'Activate AI mode'}
+                            </button>
                           </div>
+                          {aiError && (
+                            <div className="premium-desc" style={{ color: '#ff6b6b', marginTop: 8 }}>{aiError}</div>
+                          )}
+                          {aiSuggestion && (
+                            <div className="ai-suggestion-card" style={{ marginTop: 18, padding: 14, borderRadius: 10, background: 'rgba(0,212,255,0.08)', border: '1px solid #00d4ff55', color: '#dbe6ef', boxShadow: '0 0 10px #00d4ff22' }}>
+                              <div style={{ fontWeight: 600, color: '#00d4ff', marginBottom: 6 }}>AI Recommendation</div>
+                              <div style={{ fontSize: '1.1em', marginBottom: 4 }}><b>Optimal Departure:</b> {aiSuggestion.window || 'N/A'}</div>
+                              <div style={{ color: '#7fa2bd', fontSize: '0.98em' }}>{aiSuggestion.rationale || ''}</div>
+                            </div>
+                          )}
                         </div>
                       );
                     })()
