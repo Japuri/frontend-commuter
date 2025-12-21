@@ -1,0 +1,8 @@
+# Frontend dependencies are managed by package.json
+# To install, run: npm install
+# Main dependencies:
+react
+react-dom
+react-router-dom
+react-leaflet
+leaflet
