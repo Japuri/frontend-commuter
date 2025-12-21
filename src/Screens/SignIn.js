@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import usersData from '../data/users.json';
 
 function SignIn({ onAuth }) {
   const [email, setEmail] = useState('');
@@ -10,6 +11,17 @@ function SignIn({ onAuth }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // TEMPORARY: Mock authentication (remove when backend is ready)
+    const user = usersData.find(u => u.email === email && u.password === password);
+    if (user) {
+      onAuth({ user, token: 'mock-token-' + user.id });
+      navigate('/');
+    } else {
+      setError('Invalid email or password');
+    }
+    
+    /* UNCOMMENT when backend is ready:
     try {
       const res = await fetch('http://localhost:8000/api/signin/', {
         method: 'POST',
@@ -26,6 +38,7 @@ function SignIn({ onAuth }) {
     } catch (err) {
       setError('Network error');
     }
+    */
   };
 
   return (

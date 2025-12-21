@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import usersData from '../data/users.json';
 
 function SignUp({ onAuth }) {
   const [email, setEmail] = useState('');
@@ -10,6 +11,23 @@ function SignUp({ onAuth }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // TEMPORARY: Mock signup (remove when backend is ready)
+    const existingUser = usersData.find(u => u.email === email);
+    if (existingUser) {
+      setError('Email already exists');
+    } else {
+      const newUser = {
+        id: usersData.length + 1,
+        email,
+        username: email.split('@')[0],
+        is_premium: false
+      };
+      onAuth({ user: newUser, token: 'mock-token-' + newUser.id });
+      navigate('/');
+    }
+    
+    /* UNCOMMENT when backend is ready:
     try {
       const res = await fetch('http://localhost:8000/api/signup/', {
         method: 'POST',
@@ -26,6 +44,7 @@ function SignUp({ onAuth }) {
     } catch (err) {
       setError('Network error');
     }
+    */
   };
 
   return (
