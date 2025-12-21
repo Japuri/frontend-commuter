@@ -50,42 +50,92 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
   useEffect(() => {
     if (startTown && endTown && startTown !== endTown) {
-      const start = getTownById(startTown);
-      const end = getTownById(endTown);
+      let cancelled = false;
+      setEstimation({ loading: true });
 
-      // Handle both numeric IDs and PSGC codes
-      const startId = typeof start.id === 'number' ? start.id : startTown;
-      const endId = typeof end.id === 'number' ? end.id : endTown;
+      const startId = startTown;
+      const endId = endTown;
 
-      const key = `${startId}-${endId}`;
-      const reverseKey = `${endId}-${startId}`;
-      const distanceKm = distances[key] || distances[reverseKey] || 15.0;
+      const distanceCacheKey = `distance:${startId}:${endId}`;
+      const cachedDistance = sessionStorage.getItem(distanceCacheKey);
 
-      const weatherData = getWeatherForTown(endId)?.weather_data;
-      const weather = weatherData?.condition || "Unknown";
-      const trafficData = getTrafficForTown(endId)?.traffic_data || {};
-      const traffic = trafficData?.congestion_level || "Unknown";
+      async function fetchDistanceAndWeather() {
+        try {
+          let distResp;
+          if (cachedDistance) {
+            distResp = JSON.parse(cachedDistance);
+          } else {
+            const r = await fetch(`http://localhost:8000/api/distance/?start=${encodeURIComponent(startId)}&end=${encodeURIComponent(endId)}`);
+            if (!r.ok) throw new Error('Distance API error');
+            distResp = await r.json();
+            try { sessionStorage.setItem(distanceCacheKey, JSON.stringify(distResp)); } catch(e){ }
+          }
 
-      const result = estimateTravel({
-        distanceKm,
-        weatherCondition: weather,
-        congestionLevel: traffic,
-        avgSpeedKph: trafficData?.avg_speed_kph,
-      });
+          if (cancelled) return;
 
-      setEstimation({
-        minutes: result.minutes,
-        rationale: result.rationale,
-        distanceKm,
-        weather,
-        traffic,
-        start,
-        end,
-        trafficData,
-        weatherData,
-      });
-      console.log("Start town:", start);
-      console.log("End town:", end);
+          const distanceKm = distResp.data?.distance_km || distResp.data?.haversine_km || 15.0;
+          const minutes = distResp.data?.estimated_minutes || Math.round((distanceKm / 25) * 60);
+
+          // Resolve map coords: prefer coords returned by the API, otherwise fallback to local db
+          const startCoords = distResp.start_coords || {};
+          const endCoords = distResp.end_coords || {};
+          const startLocal = getTownById(startId) || {};
+          const endLocal = getTownById(endId) || {};
+
+          const startObj = {
+            id: startId,
+            name: startLocal.name || distResp.start || startId,
+            lat: startCoords.lat || startLocal.lat || 15.0,
+            lng: startCoords.lon || startLocal.lng || 120.6,
+          };
+          const endObj = {
+            id: endId,
+            name: endLocal.name || distResp.end || endId,
+            lat: endCoords.lat || endLocal.lat || 15.0,
+            lng: endCoords.lon || endLocal.lng || 120.6,
+          };
+
+          // Weather: cache per-town in sessionStorage as well (10 min)
+          async function loadWeather(townId) {
+            const key = `weather:${townId}`;
+            const cached = sessionStorage.getItem(key);
+            if (cached) {
+              try { const js = JSON.parse(cached); if (Date.now() - js._ts < 1000 * 60 * 10) return js.data; } catch(e){}
+            }
+            try {
+              const wr = await fetch(`http://localhost:8000/api/weather/?town=${encodeURIComponent(townId)}`);
+              if (!wr.ok) return null;
+              const wj = await wr.json();
+              const data = wj.data || wj;
+              try { sessionStorage.setItem(key, JSON.stringify({ _ts: Date.now(), data })); } catch(e){}
+              return data;
+            } catch (e) { return null; }
+          }
+
+          const [startWeather, endWeather] = await Promise.all([loadWeather(startId), loadWeather(endId)]);
+
+          if (cancelled) return;
+
+          setEstimation({
+            minutes,
+            rationale: distResp.data?.method || "heuristic",
+            distanceKm,
+            weather: endWeather?.condition || "Unknown",
+            traffic: "Unknown",
+            start: startObj,
+            end: endObj,
+            trafficData: {},
+            weatherData: endWeather,
+            loading: false,
+          });
+        } catch (err) {
+          console.error("Estimation error:", err);
+          if (!cancelled) setEstimation({ error: err.message || String(err), loading: false });
+        }
+      }
+
+      fetchDistanceAndWeather();
+      return () => { cancelled = true; };
     } else {
       setEstimation(null);
     }
@@ -173,7 +223,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
                 />
               </div>
 
-              {estimation && (
+              {estimation && !estimation.loading && !estimation.error && (
                 <div className="plan-card free">
                   <div className="plan-header">Travel Estimation</div>
                   <p className="included">
@@ -182,6 +232,11 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   <p className="included">
                     Distance: {estimation.distanceKm} km
                   </p>
+                  {estimation.weatherData && (
+                    <p className="included" style={{ fontSize: '0.9em', color: '#ffffffff' }}>
+                      Weather:  {estimation.weatherData.temp_c}°C • {estimation.weatherData.condition || estimation.weatherData.description}
+                    </p>
+                  )}
                   {currentUser?.is_premium && (
                     (() => {
                       const trafficSeverity = trafficSeverityFromData(estimation.trafficData);
