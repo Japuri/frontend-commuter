@@ -147,18 +147,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
     <div className="jeeproute-page">
       <div className="jeeproute-navbar">
         <div className="brand">
-          JeepRoute{" "}
-          <button className="btn-upgrade" onClick={() => {
-            if (currentUser?.is_premium) {
-              premiumCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-              premiumCardRef.current?.classList.add("flash-highlight");
-              setTimeout(() => premiumCardRef.current?.classList.remove("flash-highlight"), 1200);
-            } else {
-              navigate("/details");
-            }
-          }}>
-            Plans
-          </button>{" "}
+          JeepRoute
         </div>
         <div className="header-actions">
           {!loggedIn && (
@@ -232,12 +221,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   <p className="included">
                     Distance: {estimation.distanceKm} km
                   </p>
-                  {estimation.weatherData && (
-                    <p className="included" style={{ fontSize: '0.9em', color: '#ffffffff' }}>
-                      Weather:  {estimation.weatherData.temp_c}°C • {estimation.weatherData.condition || estimation.weatherData.description}
-                    </p>
-                  )}
-                  {currentUser?.is_premium && (
+                  {currentUser?.is_premium ? (
                     (() => {
                       const trafficSeverity = trafficSeverityFromData(estimation.trafficData);
                       const weatherBadge = weatherBadgeFor(estimation.weather);
@@ -250,8 +234,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
                           <div className="premium-grid">
                             <div className="premium-tile">
                               <div className="premium-title"><span>🌦️</span> Weather</div>
-                              <div className={`badge ${weatherBadge}`}>
-                                <span>{estimation.weather}</span>
+                              <div className={`badge ${weatherBadge}`}> 
+                                <span>{estimation.weatherData ? `${estimation.weatherData.temp_c}°C • ${estimation.weatherData.condition || estimation.weatherData.description}` : estimation.weather}</span>
                               </div>
                             </div>
 
@@ -281,6 +265,16 @@ function Homescreen({ currentUser, setCurrentUser }) {
                         </div>
                       );
                     })()
+                  ) : (
+                    <div className="premium-locked-container">
+                      <div className="premium-locked-blur" />
+                      <div className="premium-locked-content">
+                        <span className="premium-locked-icon">✨</span>
+                        <div className="premium-locked-title">Premium Insights</div>
+                        <div className="premium-locked-desc">Upgrade now to unlock real-time weather, traffic, and AI-powered route analytics!</div>
+                        <button className="btn-upgrade" onClick={() => navigate('/details')}>Upgrade Now</button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
