@@ -4,14 +4,14 @@ function PaymentScreen({ currentUser }) {
   const navigate = useNavigate();
 
   const handleConfirm = () => {
-    alert("Payment successful! 🎉 JeepRoute Plus activated.");
-    navigate("/details");
-    /* Simulate upgrading user to premium */
+    // Simulate upgrading user to premium
     if (currentUser) {
       currentUser.is_premium = true;
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
     }
-
-    navigate("/details");
+    // Set flag for congratulatory popup
+    sessionStorage.setItem('showCongrats', '1');
+    navigate("/");
   };
 
   return (

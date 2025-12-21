@@ -1,3 +1,31 @@
+/* --- Congratulations Modal Styles --- */
+.congrats-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.congrats-modal-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 32px;
+  box-shadow: 0 8px 32px #0002;
+  text-align: center;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+/* --- Leaflet Map Container Fix --- */
+.jeeproute-map .leaflet-container {
+  min-height: 350px;
+  height: 550px !important;
+  width: 100% !important;
+  border-radius: 12px;
+  z-index: 1;
+}
 /* Premium Locked (Blurred) Container Styles */
 .premium-locked-container {
   position: relative;

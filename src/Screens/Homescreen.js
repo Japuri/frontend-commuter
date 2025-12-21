@@ -55,8 +55,20 @@ function Homescreen({ currentUser, setCurrentUser }) {
         setAiLoading(false);
       }
     };
-  const [startTown, setStartTown] = useState("");
-  const [endTown, setEndTown] = useState("");
+  const [startTown, setStartTown] = useState(() => sessionStorage.getItem('startTown') || "");
+  const [endTown, setEndTown] = useState(() => sessionStorage.getItem('endTown') || "");
+  // Congratulatory popup state
+  const [showCongrats, setShowCongrats] = useState(false);
+  
+  // Persist town selections in sessionStorage
+  const handleSetStartTown = (val) => {
+    setStartTown(val);
+    try { sessionStorage.setItem('startTown', val); } catch(e){}
+  };
+  const handleSetEndTown = (val) => {
+    setEndTown(val);
+    try { sessionStorage.setItem('endTown', val); } catch(e){}
+  };
   const [towns, setTowns] = useState([]);
   const [estimation, setEstimation] = useState(null);
   const navigate = useNavigate();
@@ -177,10 +189,38 @@ function Homescreen({ currentUser, setCurrentUser }) {
     }
   }, [startTown, endTown]);
 
+  // Restore towns from sessionStorage after upgrade and trigger estimation
+  useEffect(() => {
+    if (sessionStorage.getItem('showCongrats')) {
+      setShowCongrats(true);
+      sessionStorage.removeItem('showCongrats');
+    }
+    // Always restore towns from sessionStorage after upgrade
+    const sTown = sessionStorage.getItem('startTown');
+    const eTown = sessionStorage.getItem('endTown');
+    if (sTown && sTown !== startTown) setStartTown(sTown);
+    if (eTown && eTown !== endTown) setEndTown(eTown);
+    // If both towns are present, estimation effect will run
+  }, []);
+
+  // Congratulatory popup modal
+  const CongratsModal = () => showCongrats ? (
+    <div className="congrats-modal-overlay">
+      <div className="congrats-modal-box">
+        <div style={{ fontSize: 44, marginBottom: 12 }}>🎉</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: '#00b894', marginBottom: 8 }}>Thank you for being a Plus member!</div>
+        <div style={{ fontSize: 16, color: '#333', marginBottom: 18 }}>You now have access to all premium features.<br/>Enjoy JeepRoute Plus!</div>
+        <button className="btn-neon-fill" style={{ minWidth: 120 }} onClick={() => setShowCongrats(false)}>Close</button>
+      </div>
+    </div>
+  ) : null;
+
   const loggedIn = !!currentUser;
 
   return (
-    <div className="jeeproute-page">
+    <>
+      <CongratsModal />
+      <div className="jeeproute-page">
       <div className="jeeproute-navbar">
         <div className="brand">
           JeepRoute
@@ -234,8 +274,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   towns={towns}
                   startTown={startTown}
                   endTown={endTown}
-                  setStartTown={setStartTown}
-                  setEndTown={setEndTown}
+                  setStartTown={handleSetStartTown}
+                  setEndTown={handleSetEndTown}
                   layout="start"
                 />
                 <TownSelector
@@ -345,7 +385,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
                     <div className="premium-feature"><span>⏰</span><span>Optimal departure time</span></div>
                     <div className="premium-feature"><span>📊</span><span>Advanced route analytics</span></div>
                   </div>
-                  <div className="premium-thanks">🎉 Thank you for being a Plus member!</div>
+                      <div className="premium-thanks">Thank you for being a Plus member!</div>
                 </div>
               )}
             </div>
@@ -385,6 +425,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
