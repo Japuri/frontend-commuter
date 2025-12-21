@@ -46,13 +46,15 @@ function App() {
           path="/login" element={<LoginScreen setCurrentUser={setCurrentUser}/>} />
         <Route
           path="/signin" element={<SignIn onAuth={(user) => {
-            setCurrentUser(user);
-            localStorage.setItem('currentUser', JSON.stringify(user));
+            const normalized = user?.user ? { ...user.user, token: user.token } : user;
+            setCurrentUser(normalized);
+            localStorage.setItem('currentUser', JSON.stringify(normalized));
           }} />} />
         <Route
           path="/signup" element={<SignUp onAuth={(user) => {
-            setCurrentUser(user);
-            localStorage.setItem('currentUser', JSON.stringify(user));
+            const normalized = user?.user ? { ...user.user, token: user.token } : user;
+            setCurrentUser(normalized);
+            localStorage.setItem('currentUser', JSON.stringify(normalized));
           }} />} />
         <Route path="/payment" element={<PaymentScreen currentUser={currentUser} />} />
       </Routes>

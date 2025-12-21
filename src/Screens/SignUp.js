@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import usersData from '../data/users.json';
 
 function SignUp({ onAuth }) {
@@ -7,27 +7,29 @@ function SignUp({ onAuth }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.redirectTo || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
-    // TEMPORARY: Mock signup (remove when backend is ready)
+    /* MOCK MODE: enable for offline testing
     const existingUser = usersData.find(u => u.email === email);
     if (existingUser) {
       setError('Email already exists');
-    } else {
-      const newUser = {
-        id: usersData.length + 1,
-        email,
-        username: email.split('@')[0],
-        is_premium: false
-      };
-      onAuth({ user: newUser, token: 'mock-token-' + newUser.id });
-      navigate('/');
+      return;
     }
-    
-    /* UNCOMMENT when backend is ready:
+    const newUser = {
+      id: usersData.length + 1,
+      email,
+      username: email.split('@')[0],
+      is_premium: false
+    };
+    onAuth({ user: newUser, token: 'mock-token-' + newUser.id });
+    navigate(redirectTo);
+    return;
+    */
     try {
       const res = await fetch('http://localhost:8000/api/signup/', {
         method: 'POST',
@@ -44,7 +46,6 @@ function SignUp({ onAuth }) {
     } catch (err) {
       setError('Network error');
     }
-    */
   };
 
   return (
@@ -74,7 +75,7 @@ function SignUp({ onAuth }) {
         {error && <div className="error" style={{ color: '#f55', marginTop: 10 }}>{error}</div>}
         <div className="login-footer">
           Already have an account?{' '}
-          <span className="signup-link" onClick={() => navigate('/signin')}>Sign In</span>
+          <span className="signup-link" onClick={() => navigate('/signin', { state: { redirectTo } })}>Sign In</span>
         </div>
       </div>
     </div>

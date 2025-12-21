@@ -1,7 +1,7 @@
 import { Container } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 
-function DetailScreen() {
+function DetailScreen({ currentUser }) {
   const navigate = useNavigate();
 
   return (
@@ -50,7 +50,13 @@ function DetailScreen() {
             </ul>
             <button
               className="btn-upgrade"
-              onClick={() => navigate("/payment")}
+              onClick={() => {
+                if (currentUser) {
+                  navigate("/payment");
+                } else {
+                  navigate("/signin", { state: { redirectTo: "/payment" } });
+                }
+              }}
             >
               Upgrade to Plus
             </button>

@@ -114,7 +114,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
           {loggedIn && (
             <>
               <span className="welcome-msg" style={{ marginRight: 12 }}>
-                Hi, {currentUser?.email || "User"}
+                Hi, {(currentUser?.email || "User").split("@")[0]}
               </span>
               <button
                 className="btn-neon-outline"

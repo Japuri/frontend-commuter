@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import usersData from '../data/users.json';
 
 function SignIn({ onAuth }) {
@@ -7,21 +7,24 @@ function SignIn({ onAuth }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.redirectTo || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
-    // TEMPORARY: Mock authentication (remove when backend is ready)
+    /* MOCK MODE: enable for offline testing
     const user = usersData.find(u => u.email === email && u.password === password);
     if (user) {
       onAuth({ user, token: 'mock-token-' + user.id });
-      navigate('/');
-    } else {
-      setError('Invalid email or password');
+      navigate(redirectTo);
+      return;
     }
+    setError('Invalid email or password');
+    return;
+    */
     
-    /* UNCOMMENT when backend is ready:
     try {
       const res = await fetch('http://localhost:8000/api/signin/', {
         method: 'POST',
@@ -38,7 +41,6 @@ function SignIn({ onAuth }) {
     } catch (err) {
       setError('Network error');
     }
-    */
   };
 
   return (
@@ -68,7 +70,7 @@ function SignIn({ onAuth }) {
         {error && <div className="error" style={{ color: '#f55', marginTop: 10 }}>{error}</div>}
         <div className="login-footer">
           Don't have an account?{' '}
-          <span className="signup-link" onClick={() => navigate('/signup')}>Sign Up</span>
+          <span className="signup-link" onClick={() => navigate('/signup', { state: { redirectTo } })}>Sign Up</span>
         </div>
       </div>
     </div>
