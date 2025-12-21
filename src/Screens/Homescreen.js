@@ -6,7 +6,7 @@ import {
   getTownById,
   getWeatherForTown,
   getTrafficForTown,
-} from "./mock_db";
+} from "./db";
 import { estimateTravel } from "../utils/estimation";
 import {
   weatherBadgeFor,
@@ -33,21 +33,37 @@ function Homescreen({ currentUser, setCurrentUser }) {
   }, []);
 
   useEffect(() => {
-    setTowns(db.towns);
+    // Fetch Pampanga towns from backend proxy endpoint
+    fetch("http://localhost:8000/api/towns/")
+      .then((res) => {
+        if (!res.ok) throw new Error("Backend towns API error");
+        return res.json();
+      })
+      .then((data) => {
+        setTowns(data);
+      })
+      .catch(() => {
+        // fallback to local db if backend API fails
+        setTowns(db.towns);
+      });
   }, []);
 
   useEffect(() => {
     if (startTown && endTown && startTown !== endTown) {
-      const start = getTownById(parseInt(startTown));
-      const end = getTownById(parseInt(endTown));
+      const start = getTownById(startTown);
+      const end = getTownById(endTown);
 
-      const key = `${start.id}-${end.id}`;
-      const reverseKey = `${end.id}-${start.id}`;
+      // Handle both numeric IDs and PSGC codes
+      const startId = typeof start.id === 'number' ? start.id : startTown;
+      const endId = typeof end.id === 'number' ? end.id : endTown;
+
+      const key = `${startId}-${endId}`;
+      const reverseKey = `${endId}-${startId}`;
       const distanceKm = distances[key] || distances[reverseKey] || 15.0;
 
-      const weatherData = getWeatherForTown(end.id)?.weather_data;
+      const weatherData = getWeatherForTown(endId)?.weather_data;
       const weather = weatherData?.condition || "Unknown";
-      const trafficData = getTrafficForTown(end.id)?.traffic_data || {};
+      const trafficData = getTrafficForTown(endId)?.traffic_data || {};
       const traffic = trafficData?.congestion_level || "Unknown";
 
       const result = estimateTravel({

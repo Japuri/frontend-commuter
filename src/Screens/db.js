@@ -19,7 +19,26 @@ export const db = {
 };
 
 export const getUserById = (id) => users.find((u) => u.id === id);
-export const getTownById = (id) => towns.find((t) => t.id === id);
+export const getTownById = (id) => {
+  // First try to find by exact ID match in local data
+  const numericId = typeof id === 'string' ? parseInt(id) : id;
+  const localTown = towns.find((t) => t.id === numericId);
+  
+  if (localTown) {
+    return localTown;
+  }
+  
+  // If not found in local data, return a placeholder with the PSGC code as ID
+  // This allows the app to work with PSGC towns that don't have local data yet
+  return {
+    id: id,
+    name: `Town ${id}`,
+    street: "N/A",
+    lat: 15.0,
+    lng: 120.6,
+    additional: 0
+  };
+};
 export const getSubscriptionForUser = (userId) =>
   subscriptions.find((s) => s.user_id === userId && s.status === "active");
 

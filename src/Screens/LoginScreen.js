@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authenticateUser } from "./mock_db";
+import { authenticateUser } from "./db";
 
 function LoginScreen({ setCurrentUser }) {
   const [username, setUsername] = useState("");
