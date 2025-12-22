@@ -23,26 +23,24 @@ function Homescreen({ currentUser, setCurrentUser }) {
     const [aiSuggestion, setAiSuggestion] = useState(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState("");
+    
+    /* BACKEND MODE: AI suggestion endpoint - uncomment to enable backend */
+    /*
     const handleActivateAIMode = async () => {
       if (!estimation || !currentUser?.is_premium) return;
       setAiLoading(true);
       setAiError("");
       setAiSuggestion(null);
       try {
-        // Compose payload for backend
         const payload = {
           weather: estimation.weatherData || {},
           traffic: estimation.trafficData || {},
           distance: estimation.distanceKm,
           time_of_day: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        // Use JWT or session auth if needed
         const resp = await fetch("http://localhost:8000/api/ai-suggestion/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            // Add auth header if needed
-          },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(payload)
         });
@@ -54,6 +52,22 @@ function Homescreen({ currentUser, setCurrentUser }) {
       } finally {
         setAiLoading(false);
       }
+    };
+    */
+    
+    /* FRONTEND MODE: Mock AI suggestion - comment this to enable backend */
+    const handleActivateAIMode = () => {
+      if (!estimation || !currentUser?.is_premium) return;
+      setAiLoading(true);
+      setAiError("");
+      setAiSuggestion(null);
+      setTimeout(() => {
+        setAiSuggestion({
+          window: "7:00 AM - 7:15 AM",
+          rationale: "Based on current weather and traffic patterns, departing between 7:00-7:15 AM will help you avoid peak congestion."
+        });
+        setAiLoading(false);
+      }, 1500);
     };
   const [startTown, setStartTown] = useState(() => sessionStorage.getItem('startTown') || "");
   const [endTown, setEndTown] = useState(() => sessionStorage.getItem('endTown') || "");
@@ -81,7 +95,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
   }, []);
 
   useEffect(() => {
-    // Fetch Pampanga towns from backend proxy endpoint
+    /* BACKEND MODE: Fetch towns from API - uncomment to enable backend */
+    /*
     fetch("http://localhost:8000/api/towns/")
       .then((res) => {
         if (!res.ok) throw new Error("Backend towns API error");
@@ -91,13 +106,18 @@ function Homescreen({ currentUser, setCurrentUser }) {
         setTowns(data);
       })
       .catch(() => {
-        // fallback to local db if backend API fails
         setTowns(db.towns);
       });
+    */
+    
+    /* FRONTEND MODE: Use local dummy data - comment this to enable backend */
+    setTowns(db.towns);
   }, []);
 
   useEffect(() => {
     if (startTown && endTown && startTown !== endTown) {
+      /* BACKEND MODE: Fetch from API with caching - uncomment to enable backend */
+      /*
       let cancelled = false;
       setEstimation({ loading: true });
 
@@ -124,7 +144,6 @@ function Homescreen({ currentUser, setCurrentUser }) {
           const distanceKm = distResp.data?.distance_km || distResp.data?.haversine_km || 15.0;
           const minutes = distResp.data?.estimated_minutes || Math.round((distanceKm / 25) * 60);
 
-          // Resolve map coords: prefer coords returned by the API, otherwise fallback to local db
           const startCoords = distResp.start_coords || {};
           const endCoords = distResp.end_coords || {};
           const startLocal = getTownById(startId) || {};
@@ -143,7 +162,6 @@ function Homescreen({ currentUser, setCurrentUser }) {
             lng: endCoords.lon || endLocal.lng || 120.6,
           };
 
-          // Weather: cache per-town in sessionStorage as well (10 min)
           async function loadWeather(townId) {
             const key = `weather:${townId}`;
             const cached = sessionStorage.getItem(key);
@@ -184,6 +202,41 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
       fetchDistanceAndWeather();
       return () => { cancelled = true; };
+      */
+      
+      /* FRONTEND MODE: Use dummy data from local JSON - comment this to enable backend */
+      const start = getTownById(parseInt(startTown));
+      const end = getTownById(parseInt(endTown));
+
+      const key = `${start.id}-${end.id}`;
+      const reverseKey = `${end.id}-${start.id}`;
+      const distanceKm = distances[key] || distances[reverseKey] || 15.0;
+
+      const weatherData = getWeatherForTown(end.id)?.weather_data;
+      const weather = weatherData?.condition || "Unknown";
+      const trafficData = getTrafficForTown(end.id)?.traffic_data || {};
+      const traffic = trafficData?.congestion_level || "Unknown";
+
+      const result = estimateTravel({
+        distanceKm,
+        weatherCondition: weather,
+        congestionLevel: traffic,
+        avgSpeedKph: trafficData?.avg_speed_kph,
+      });
+
+      setEstimation({
+        minutes: result.minutes,
+        rationale: result.rationale,
+        distanceKm,
+        weather,
+        traffic,
+        start,
+        end,
+        trafficData,
+        weatherData,
+      });
+      console.log("Start town:", start);
+      console.log("End town:", end);
     } else {
       setEstimation(null);
     }
@@ -319,10 +372,17 @@ function Homescreen({ currentUser, setCurrentUser }) {
                               <div className="premium-title"><span>🚦</span> Traffic</div>
                               <div className="meter-row">
                                 <div className="meter-track">
-                                  <div className="meter-fill" style={{ width: `${trafficSeverity}%` }} />
+                                  <div className="meter-fill" style={{ 
+                                    width: `${Math.max(trafficSeverity, 8)}%`,
+                                    minWidth: '20px',
+                                    background: trafficSeverity > 70 ? 'linear-gradient(90deg, #ff6b6b, #ff3838)' : trafficSeverity > 40 ? 'linear-gradient(90deg, #f9c74f, #ff9100)' : 'linear-gradient(90deg, #00ffc3, #00d4ff)',
+                                    boxShadow: trafficSeverity > 70 ? '0 0 8px #ff6b6b' : trafficSeverity > 40 ? '0 0 8px #f9c74f' : '0 0 8px #00ffc3',
+                                    transition: 'all 0.3s ease'
+                                  }} />
                                 </div>
                                 <span className={`badge ${trafficBadge} nowrap`}>{estimation.traffic}</span>
                               </div>
+                              <div style={{ fontSize: '0.85em', color: '#7fa2bd', marginTop: 4 }}>Severity: {trafficSeverity}%</div>
                             </div>
 
                             <div className="premium-tile">

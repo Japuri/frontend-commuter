@@ -14,7 +14,7 @@ function SignIn({ onAuth }) {
     e.preventDefault();
     setError('');
     
-    /* MOCK MODE: enable for offline testing
+    /* MOCK MODE: enable for offline testing */
     const user = usersData.find(u => u.email === email && u.password === password);
     if (user) {
       onAuth({ user, token: 'mock-token-' + user.id });
@@ -23,8 +23,8 @@ function SignIn({ onAuth }) {
     }
     setError('Invalid email or password');
     return;
-    */
-    
+
+    /* LIVE MODE: re-enable when backend is stable
     try {
       const res = await fetch('http://localhost:8000/api/signin/', {
         method: 'POST',
@@ -41,6 +41,7 @@ function SignIn({ onAuth }) {
     } catch (err) {
       setError('Network error');
     }
+    */
   };
 
   return (

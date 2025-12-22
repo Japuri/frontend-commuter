@@ -24,19 +24,19 @@ This project is a commuter web application with a React frontend and a Django RE
 
 1. **Make the Website Look Good on All Devices** 
 	- Check if the website looks nice on phones and tablets.
-	- Adjust the layout and buttons so they are easy to use on any screen.
+	- Adjust the layout and buttons so they are easy to use on any screen. (DONE ✅)
 
 2. **Improve Forms**
 	- Make sure forms (like sign up and sign in) check for correct email format and strong passwords before submitting.
-	- Show clear messages if the user makes a mistake (like wrong email or weak password).
+	- Show clear messages if the user makes a mistake (like wrong email or weak password). (IN PROGRESS)
 
 3. **Add Error and 404 Pages (priority)**
 	- Create a simple page that shows “Page Not Found” if the user goes to a wrong link.
-	- Show a friendly error message if something goes wrong.
+	- Show a friendly error message if something goes wrong. (IN PROGRESS)
 
 4. **Use Sample Data for Features Not Connected Yet (priority)**
 	- For things like travel history or payment, show example (fake) data until the backend is ready.
-	- Make a simple user profile page with sample info.
+	- Make a simple user profile page with sample info. (PROFILE IN PROGRESS)
 
 5. **Create Placeholders for Future Features (priority)**
 	- Add simple pages or sections for features you plan to add later (like payment or premium dashboard), even if they don’t work yet.
