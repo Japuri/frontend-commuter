@@ -37,7 +37,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
           time_of_day: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         // Use JWT or session auth if needed
-        const resp = await fetch("https://visitatorial-barbra-cathodically.ngrok-free.dev/api/ai-suggestion/", {
+        const resp = await fetch("https://backend-commuter.onrender.com/api/ai-suggestion/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -82,7 +82,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
   useEffect(() => {
     // Fetch Pampanga towns from backend proxy endpoint
-    fetch("https://visitatorial-barbra-cathodically.ngrok-free.dev/api/towns/")
+    fetch("https://backend-commuter.onrender.com/api/towns/")
       .then((res) => {
         if (!res.ok) throw new Error("Backend towns API error");
         return res.json();
@@ -113,7 +113,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
           if (cachedDistance) {
             distResp = JSON.parse(cachedDistance);
           } else {
-            const r = await fetch(`https://visitatorial-barbra-cathodically.ngrok-free.dev/api/distance/?start=${encodeURIComponent(startId)}&end=${encodeURIComponent(endId)}`);
+            const r = await fetch(`https://backend-commuter.onrender.com/api/distance/?start=${encodeURIComponent(startId)}&end=${encodeURIComponent(endId)}`);
             if (!r.ok) throw new Error('Distance API error');
             distResp = await r.json();
             try { sessionStorage.setItem(distanceCacheKey, JSON.stringify(distResp)); } catch(e){ }
@@ -151,7 +151,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
               try { const js = JSON.parse(cached); if (Date.now() - js._ts < 1000 * 60 * 10) return js.data; } catch(e){}
             }
             try {
-              const wr = await fetch(`https://visitatorial-barbra-cathodically.ngrok-free.dev/api/weather/?town=${encodeURIComponent(townId)}`);
+              const wr = await fetch(`https://backend-commuter.onrender.com/api/weather/?town=${encodeURIComponent(townId)}`);
               if (!wr.ok) return null;
               const wj = await wr.json();
               const data = wj.data || wj;
