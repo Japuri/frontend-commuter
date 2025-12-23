@@ -1,13 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TownSelector from "../Components/TownSelector";
-import {
-  db,
-  getTownById,
-  getWeatherForTown,
-  getTrafficForTown,
-} from "./db";
-import { estimateTravel } from "../utils/estimation";
+import { db, getTownById } from "./db";
 import {
   weatherBadgeFor,
   trafficSeverityFromData,
@@ -15,8 +9,8 @@ import {
   confidenceFromIndicators,
   applyPremiumOverrides,
 } from "../utils/metrics";
-import distances from "../data/distances.json";
-import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet";
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 function Homescreen({ currentUser, setCurrentUser }) {
     // AI Suggestion state for premium users
@@ -160,7 +154,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
             } catch (e) { return null; }
           }
 
-          const [startWeather, endWeather] = await Promise.all([loadWeather(startId), loadWeather(endId)]);
+          const [, endWeather] = await Promise.all([loadWeather(startId), loadWeather(endId)]);
 
           if (cancelled) return;
 
@@ -201,7 +195,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
     if (sTown && sTown !== startTown) setStartTown(sTown);
     if (eTown && eTown !== endTown) setEndTown(eTown);
     // If both towns are present, estimation effect will run
-  }, []);
+  }, [startTown, endTown]);
 
   // Congratulatory popup modal
   const CongratsModal = () => showCongrats ? (
@@ -392,40 +386,143 @@ function Homescreen({ currentUser, setCurrentUser }) {
           </div>
 
           <div className="jeeproute-map">
-            {estimation?.start && estimation?.end ? (
-              <MapContainer
-                center={[estimation.start.lat, estimation.start.lng]}
-                zoom={9.95}
-                style={{ height: "550px", width: "100%" }}
-                scrollWheelZoom={false}
-                dragging={false}
-                zoomControl={false}
-                doubleClickZoom={false}
-                touchZoom={true}
-                boxZoom={false}
-                minZoom={9.95}
-                maxZoom={11}
-              >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <Marker
-                  position={[estimation.start.lat, estimation.start.lng]}
-                />
-                <Marker position={[estimation.end.lat, estimation.end.lng]} />
-                <Polyline
-                  positions={[
-                    [estimation.start.lat, estimation.start.lng],
-                    [estimation.end.lat, estimation.end.lng],
-                  ]}
-                />
-              </MapContainer>
-            ) : (
-              <p className="map-placeholder">Selected route shows here</p>
-            )}
+            <Mapbox3DMap estimation={estimation} />
           </div>
         </div>
       </div>
     </div>
     </>
+  );
+}
+
+// Mapbox 3D Map Component
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+
+function Mapbox3DMap({ estimation }) {
+  const mapContainer = useRef(null);
+  const mapRef = useRef(null);
+
+  // Helper: get traffic color
+  function getTrafficColor(trafficData) {
+    // You can adjust this logic as needed
+    const severity = trafficSeverityFromData ? trafficSeverityFromData(trafficData) : 0;
+    if (severity >= 70) return '#e74c3c'; // red
+    if (severity >= 40) return '#f1c40f'; // yellow
+    return '#27ae60'; // green
+  }
+
+  useEffect(() => {
+    if (!mapContainer.current) return;
+    if (!estimation?.start || !estimation?.end) {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      return;
+    }
+
+    // Clean up previous map instance
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+    const map = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [estimation.start.lng, estimation.start.lat],
+      zoom: 10,
+      pitch: 50,
+      bearing: 0,
+      antialias: true
+    });
+    mapRef.current = map;
+
+    // Add navigation controls
+    map.addControl(new mapboxgl.NavigationControl());
+
+    // Add 3D buildings layer on load
+    map.on('load', () => {
+      // 3D buildings
+      const layers = map.getStyle().layers;
+      const labelLayerId = layers.find(
+        (layer) => layer.type === 'symbol' && layer.layout && layer.layout['text-field']
+      )?.id;
+      map.addLayer(
+        {
+          'id': '3d-buildings',
+          'source': 'composite',
+          'source-layer': 'building',
+          'filter': ['==', 'extrude', 'true'],
+          'type': 'fill-extrusion',
+          'minzoom': 15,
+          'paint': {
+            'fill-extrusion-color': '#aaa',
+            'fill-extrusion-height': ["get", "height"],
+            'fill-extrusion-base': ["get", "min_height"],
+            'fill-extrusion-opacity': 0.6
+          }
+        },
+        labelLayerId
+      );
+
+      // Add route line with traffic color
+      const trafficColor = getTrafficColor(estimation.trafficData);
+      map.addSource('route', {
+        'type': 'geojson',
+        'data': {
+          'type': 'Feature',
+          'geometry': {
+            'type': 'LineString',
+            'coordinates': [
+              [estimation.start.lng, estimation.start.lat],
+              [estimation.end.lng, estimation.end.lat]
+            ]
+          }
+        }
+      });
+      map.addLayer({
+        'id': 'route-line',
+        'type': 'line',
+        'source': 'route',
+        'layout': {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        'paint': {
+          'line-color': trafficColor,
+          'line-width': 5
+        }
+      });
+
+      // Add start marker
+      new mapboxgl.Marker({ color: '#0074D9' })
+        .setLngLat([estimation.start.lng, estimation.start.lat])
+        .addTo(map);
+      // Add end marker
+      new mapboxgl.Marker({ color: '#FF4136' })
+        .setLngLat([estimation.end.lng, estimation.end.lat])
+        .addTo(map);
+    });
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [estimation]);
+
+  return (
+    <div
+      ref={mapContainer}
+      style={{ width: '100%', height: '550px', borderRadius: 12, overflow: 'hidden', background: '#eaf6ff' }}
+    >
+      {!estimation?.start || !estimation?.end ? (
+        <div style={{textAlign:'center',paddingTop:120,color:'#888'}}>Selected route shows here</div>
+      ) : null}
+    </div>
   );
 }
 
