@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import usersData from '../data/users.json';
 
 function SignUp({ onAuth }) {
   const [email, setEmail] = useState('');
@@ -14,7 +13,7 @@ function SignUp({ onAuth }) {
     e.preventDefault();
     setError('');
     
-    /* MOCK MODE: enable for offline testing */
+    /* MOCK MODE: enable for offline testing
     const existingUser = usersData.find(u => u.email === email);
     if (existingUser) {
       setError('Email already exists');
@@ -29,8 +28,8 @@ function SignUp({ onAuth }) {
     onAuth({ user: newUser, token: 'mock-token-' + newUser.id });
     navigate(redirectTo);
     return;
+    */
 
-    /* LIVE MODE: re-enable when backend is stable
     try {
       const res = await fetch('http://localhost:8000/api/signup/', {
         method: 'POST',
@@ -47,7 +46,6 @@ function SignUp({ onAuth }) {
     } catch (err) {
       setError('Network error');
     }
-    */
   };
 
   return (

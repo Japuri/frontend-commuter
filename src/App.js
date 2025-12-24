@@ -4,6 +4,7 @@ import DetailScreen from './Screens/DetailScreen';
 import LoginScreen from './Screens/LoginScreen';
 import SignIn from './Screens/SignIn';
 import SignUp from './Screens/SignUp';
+import ProfileScreen from './Screens/ProfileScreen';
 import { useState, useEffect } from 'react';
 import PaymentScreen from './Screens/PaymentScreen';
 import 'leaflet/dist/leaflet.css';
@@ -57,6 +58,7 @@ function App() {
             localStorage.setItem('currentUser', JSON.stringify(normalized));
           }} />} />
         <Route path="/payment" element={<PaymentScreen currentUser={currentUser} />} />
+        <Route path="/profile" element={<ProfileScreen currentUser={currentUser} />} />
       </Routes>
     </Router>
   );
