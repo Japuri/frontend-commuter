@@ -1,4 +1,3 @@
-
 // Only keep towns and PSGC mapping for name resolution
 import towns from "../data/towns.json";
 import psgcTowns from "../data/psgc_towns.json";
@@ -91,3 +90,31 @@ export const getEstimationsForUser = (userId) => [];
 export function authenticateUser(username, password) {
 	return null;
 }
+
+// Upgrade user subscription status
+export const upgradeSubscription = async (userId, token, newStatus) => {
+	const headers = { 'Content-Type': 'application/json' };
+	if (token) headers['Authorization'] = `Bearer ${token}`;
+	const resp = await fetch(`/api/users/${userId}/subscription`, {
+		method: 'POST',
+		headers,
+		credentials: 'include',
+		body: JSON.stringify({ subscription_status: newStatus })
+	});
+	if (!resp.ok) throw new Error('Failed to update subscription');
+	return await resp.json();
+};
+
+// Log a new trip to the backend
+export const logTrip = async (userId, token, tripData) => {
+	const headers = { 'Content-Type': 'application/json' };
+	if (token) headers['Authorization'] = `Bearer ${token}`;
+	const resp = await fetch(`/api/users/${userId}/travel-history`, {
+		method: 'POST',
+		headers,
+		credentials: 'include',
+		body: JSON.stringify(tripData)
+	});
+	if (!resp.ok) throw new Error('Failed to log trip');
+	return await resp.json();
+};

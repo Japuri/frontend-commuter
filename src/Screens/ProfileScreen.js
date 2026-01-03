@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   getRecentSelectionsForUser,
   getTownById,
   getUserById,
+  upgradeSubscription,
 } from "./db";
 
 
@@ -22,40 +23,67 @@ function travelerType(user) {
 
 export default function ProfileScreen({ currentUser, token }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [upgrading, setUpgrading] = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userId = currentUser?.id;
+      if (!userId) throw new Error("No user ID");
+      const prof = await getUserById(userId, token);
+      const hist = await getRecentSelectionsForUser(userId, token);
+      setProfile(prof);
+      setHistory(
+        (hist || []).map((sel) => {
+          const townName = sel.town_name || getTownById(sel.town_id)?.name || `Town ${sel.town_id}`;
+          const date = new Date(sel.selected_at);
+          return {
+            town: townName,
+            date: date.toLocaleDateString(),
+            time: date.toLocaleTimeString(),
+          };
+        })
+      );
+    } catch (e) {
+      setError(e.message || "Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      try {
-        const userId = currentUser?.id;
-        if (!userId) throw new Error("No user ID");
-        const prof = await getUserById(userId, token);
-        const hist = await getRecentSelectionsForUser(userId, token);
-        setProfile(prof);
-        setHistory(
-          (hist || []).map((sel) => {
-            const townName = sel.town_name || getTownById(sel.town_id)?.name || `Town ${sel.town_id}`;
-            const date = new Date(sel.selected_at);
-            return {
-              town: townName,
-              date: date.toLocaleDateString(),
-              time: date.toLocaleTimeString(),
-            };
-          })
-        );
-      } catch (e) {
-        setError(e.message || "Failed to load profile");
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchData();
-  }, [currentUser, token]);
+  }, [currentUser, token, location.key]);
+
+  // Refetch data when the page becomes visible (user navigates back)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!loading) {
+        fetchData();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loading]);
+
+  const handleUpgrade = async (newStatus) => {
+    setUpgrading(true);
+    setError(null);
+    try {
+      await upgradeSubscription(currentUser.id, token, newStatus);
+      await fetchData();
+    } catch (e) {
+      setError(e.message || "Upgrade failed");
+    } finally {
+      setUpgrading(false);
+    }
+  };
 
   if (loading) return <div className="profile-loading">Loading profile...</div>;
   if (error) return <div className="profile-error">{error}</div>;
@@ -105,6 +133,27 @@ export default function ProfileScreen({ currentUser, token }) {
                   onClick={() => navigate("/payment")}
                 >
                   Manage Subscription
+                </button>
+                <button
+                  className="btn-success"
+                  disabled={upgrading}
+                  onClick={() => handleUpgrade("plus")}
+                >
+                  Upgrade to Plus
+                </button>
+                <button
+                  className="btn-warning"
+                  disabled={upgrading}
+                  onClick={() => handleUpgrade("premium")}
+                >
+                  Upgrade to Premium
+                </button>
+                <button
+                  className="btn-secondary"
+                  disabled={upgrading}
+                  onClick={() => handleUpgrade("free")}
+                >
+                  Set to Free
                 </button>
               </div>
             </div>

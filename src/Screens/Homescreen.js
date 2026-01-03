@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TownSelector from "../Components/TownSelector";
-import { db, getTownById } from "./db";
+import { db, getTownById, logTrip } from "./db";
 import { logTravel } from "../services/travelLogger";
 import {
   weatherBadgeFor,
@@ -74,12 +74,35 @@ function Homescreen({ currentUser, setCurrentUser }) {
       sessionStorage.setItem("startTown", val);
     } catch (e) {}
   };
-  const handleSetEndTown = (val) => {
+  const handleSetEndTown = async (val) => {
     setEndTown(val);
     setRouteRequested(false);
     try {
       sessionStorage.setItem("endTown", val);
-    } catch (e) {}
+      // Log trip to backend when user selects an end town
+      if (currentUser?.id && currentUser?.token && startTown && val) {
+        const startTownData = getTownById(startTown);
+        const endTownData = getTownById(val);
+        console.log('Logging trip:', { userId: currentUser.id, startTown, endTown: val });
+        const result = await logTrip(currentUser.id, currentUser.token, {
+          town_id: val,
+          town_name: endTownData?.name || val,
+          start_town: startTown,
+          distance_km: 0,
+          estimated_minutes: 0
+        });
+        console.log('Trip logged successfully:', result);
+      } else {
+        console.log('Skipping trip log - missing data:', { 
+          hasUser: !!currentUser?.id, 
+          hasToken: !!currentUser?.token, 
+          hasStartTown: !!startTown, 
+          hasEndTown: !!val 
+        });
+      }
+    } catch (e) {
+      console.error('Error logging trip:', e);
+    }
   };
   const [towns, setTowns] = useState([]);
   const [estimation, setEstimation] = useState(null);
@@ -356,7 +379,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
                     startTown={startTown}
                     endTown={endTown}
                     setStartTown={setStartTown}
-                    setEndTown={setEndTown}
+                    setEndTown={handleSetEndTown}
                     layout="end"
                   />
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
