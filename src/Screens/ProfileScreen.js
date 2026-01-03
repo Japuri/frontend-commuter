@@ -1,12 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  db,
-  getSubscriptionForUser,
   getRecentSelectionsForUser,
-  getTotalTripsForUser,
   getTownById,
+  getUserById,
 } from "./db";
+
 
 function formatName(user) {
   if (!user) return "Unknown";
@@ -20,36 +19,52 @@ function travelerType(user) {
   return /student/i.test(u) ? "Student" : "Regular";
 }
 
-function subscriptionStatus(userId) {
-  const sub = getSubscriptionForUser(userId);
-  if (!sub) return "No subscription yet";
-  if (sub.status === "active") return `Active (expires ${sub.expiration_date})`;
-  return `Last subscription (${sub.expiration_date})`;
-}
 
-function buildTravelHistory(userId) {
-  const recent = getRecentSelectionsForUser(userId) || [];
-  return recent.map((sel) => {
-    const townName =
-      sel.town_name || getTownById(sel.town_id)?.name || `Town ${sel.town_id}`;
-    const date = new Date(sel.selected_at);
-    return {
-      town: townName,
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString(),
-    };
-  });
-}
-
-export default function ProfileScreen({ currentUser }) {
+export default function ProfileScreen({ currentUser, token }) {
   const navigate = useNavigate();
-  const user = currentUser || db.users?.[0];
+  const [profile, setProfile] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const name = formatName(user);
-  const type = travelerType(user);
-  const sub = subscriptionStatus(user?.id);
-  const history = buildTravelHistory(user?.id);
-  const totalTrips = getTotalTripsForUser(user?.id);
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const userId = currentUser?.id;
+        if (!userId) throw new Error("No user ID");
+        const prof = await getUserById(userId, token);
+        const hist = await getRecentSelectionsForUser(userId, token);
+        setProfile(prof);
+        setHistory(
+          (hist || []).map((sel) => {
+            const townName = sel.town_name || getTownById(sel.town_id)?.name || `Town ${sel.town_id}`;
+            const date = new Date(sel.selected_at);
+            return {
+              town: townName,
+              date: date.toLocaleDateString(),
+              time: date.toLocaleTimeString(),
+            };
+          })
+        );
+      } catch (e) {
+        setError(e.message || "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [currentUser, token]);
+
+  if (loading) return <div className="profile-loading">Loading profile...</div>;
+  if (error) return <div className="profile-error">{error}</div>;
+  if (!profile) return <div className="profile-error">No profile data.</div>;
+
+  const name = formatName(profile);
+  const type = travelerType(profile);
+  const sub = profile.subscription_status || "No subscription yet";
+  const totalTrips = profile.total_trips;
   const lastTravel = history[0];
   const avatar = name?.[0]?.toUpperCase?.() || "J";
 
@@ -147,7 +162,7 @@ export default function ProfileScreen({ currentUser }) {
               <div className="detail-row">
                 <span className="detail-label">Email</span>
                 <span className="detail-value">
-                  {user?.email || "Not provided"}
+                  {profile?.email || "Not provided"}
                 </span>
               </div>
             </div>

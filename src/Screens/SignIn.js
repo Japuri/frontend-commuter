@@ -28,6 +28,7 @@ function SignIn({ onAuth }) {
       const res = await fetch('http://localhost:8000/api/signin/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();

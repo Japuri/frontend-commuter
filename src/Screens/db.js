@@ -1,26 +1,25 @@
+
+// Only keep towns and PSGC mapping for name resolution
 import towns from "../data/towns.json";
 import psgcTowns from "../data/psgc_towns.json";
-import users from "../data/users.json";
-import subscriptions from "../data/subscriptions.json";
-import payments from "../data/payments.json";
-import townSelections from "../data/town_selection.json";
-import { getLogsForUser } from "../services/travelLogger";
-import weatherCache from "../data/weather_cache.json";
-import travelCache from "../data/travel_cache.json";
-import transitEstimations from "../data/transit_estimations.json";
 
+// Only keep towns and PSGC mapping for name resolution/backups
 export const db = {
 	towns,
-	users,
-	subscriptions,
-	payments,
-	townSelections,
-	weatherCache,
-	travelCache,
-	transitEstimations,
+	psgcTowns,
 };
 
-export const getUserById = (id) => users.find((u) => u.id === id);
+// Fetch user profile from backend
+export const getUserById = async (id, token) => {
+	const headers = {};
+	if (token) headers['Authorization'] = `Bearer ${token}`;
+	const resp = await fetch(`/api/users/${id}/profile`, {
+		headers,
+		credentials: 'include',
+	});
+	if (!resp.ok) throw new Error('Failed to fetch user profile');
+	return await resp.json();
+};
 export const getTownById = (id) => {
 	const idStr = String(id);
 	// Try strict match in local towns (handles numeric or string ids)
@@ -50,44 +49,45 @@ export const getTownById = (id) => {
 		additional: 0,
 	};
 };
-export const getSubscriptionForUser = (userId) =>
-	subscriptions.find((s) => s.user_id === userId && s.status === "active");
+// Get subscription status from backend profile
+export const getSubscriptionForUser = async (userId, token) => {
+	const profile = await getUserById(userId, token);
+	return profile.subscription_status;
+};
 
-export const getWeatherForTown = (townId) =>
-	weatherCache.find((w) => w.town_id === townId);
-export const getTrafficForTown = (townId) =>
-	travelCache.find((t) => t.town_id === townId);
+// Weather and traffic data should be fetched from backend API
+export const getWeatherForTown = (townId) => null;
+export const getTrafficForTown = (townId) => null;
 
-export const getAllSelectionsForUser = (userId) => {
-	const base = townSelections.filter((ts) => ts.user_id === userId);
-	const logs = getLogsForUser(userId) || [];
-	// Normalize to include town_name
-	const normalizedBase = base.map((ts) => {
-		const town = getTownById(ts.town_id) || { name: `Town ${ts.town_id}` };
-		return { ...ts, town_name: town.name };
+// Fetch recent travel history from backend
+export const getRecentSelectionsForUser = async (userId, token) => {
+	const headers = {};
+	if (token) headers['Authorization'] = `Bearer ${token}`;
+	const resp = await fetch(`/api/users/${userId}/travel-history?limit=3`, {
+		headers,
+		credentials: 'include',
 	});
-	const normalizedLogs = logs.map((l) => {
-		const townName = l.town_name || (getTownById(l.town_id)?.name || `Town ${l.town_id}`);
-		return { ...l, town_name: townName };
-	});
-	return [...normalizedBase, ...normalizedLogs]
-		.sort((a, b) => new Date(b.selected_at) - new Date(a.selected_at)); // newest first
+	if (!resp.ok) throw new Error('Failed to fetch travel history');
+	const trips = await resp.json();
+	// Add town_name using PSGC mapping if needed
+	return trips.map((t) => ({
+		...t,
+		town_name: getTownById(t.town_id)?.name || t.town_name || `Town ${t.town_id}`,
+	}));
 };
 
-export const getRecentSelectionsForUser = (userId) => {
-	return getAllSelectionsForUser(userId).slice(0, 3); // last 3 only for display
+
+
+// Fetch total trips from backend profile
+export const getTotalTripsForUser = async (userId, token) => {
+	const profile = await getUserById(userId, token);
+	return profile.total_trips;
 };
 
-export const getTotalTripsForUser = (userId) => {
-	return getAllSelectionsForUser(userId).length;
-};
+// Deprecated: Use backend API for estimations
+export const getEstimationsForUser = (userId) => [];
 
-export const getEstimationsForUser = (userId) =>
-	transitEstimations.filter((te) => te.user_id === userId);
-
+// Deprecated: Use backend API for authentication (signin/signup endpoints)
 export function authenticateUser(username, password) {
-	return (
-		users.find((u) => u.username === username && u.password === password) ||
-		null
-	);
+	return null;
 }

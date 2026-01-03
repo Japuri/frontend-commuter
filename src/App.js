@@ -58,7 +58,7 @@ function App() {
             localStorage.setItem('currentUser', JSON.stringify(normalized));
           }} />} />
         <Route path="/payment" element={<PaymentScreen currentUser={currentUser} />} />
-        <Route path="/profile" element={<ProfileScreen currentUser={currentUser} />} />
+        <Route path="/profile" element={<ProfileScreen currentUser={currentUser} token={currentUser?.token} />} />
       </Routes>
     </Router>
   );
