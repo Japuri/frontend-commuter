@@ -31,6 +31,12 @@ export default function ProfileScreen({ currentUser, token }) {
   const [upgrading, setUpgrading] = useState(false);
 
   const fetchData = async () => {
+    // Redirect to sign-in if not authenticated
+    if (!currentUser || !token) {
+      navigate('/signin', { state: { redirectTo: '/profile' } });
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
