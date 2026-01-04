@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { login } from '../services/auth';
 
 function SignIn({ onAuth }) {
   const [email, setEmail] = useState('');
@@ -25,21 +26,12 @@ function SignIn({ onAuth }) {
     */
 
     try {
-      const res = await fetch('http://localhost:8000/api/signin/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        onAuth(data);
-        navigate('/');
-      } else {
-        setError(data.message || 'Sign in failed');
-      }
+      const tokens = await login(email, password);
+      // Pass tokens up to the app so it can fetch user profile if needed
+      onAuth({ access: tokens.access, refresh: tokens.refresh, email });
+      navigate(redirectTo);
     } catch (err) {
-      setError('Network error');
+      setError(err.message || 'Sign in failed');
     }
   };
 
