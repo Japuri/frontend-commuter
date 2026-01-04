@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 
 function SignUp({ onAuth }) {
   const [email, setEmail] = useState('');
@@ -31,7 +32,7 @@ function SignUp({ onAuth }) {
     */
 
     try {
-      const res = await fetch('http://localhost:8000/api/signup/', {
+      const res = await fetch(`${API_BASE_URL}/api/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

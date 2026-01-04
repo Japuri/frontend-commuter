@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Homescreen from './Screens/Homescreen';
 import DetailScreen from './Screens/DetailScreen';
 import LoginScreen from './Screens/LoginScreen';
@@ -21,6 +21,17 @@ L.Icon.Default.mergeOptions({
 });
 
 
+function SetGlobalNavigate() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    window.navigateForAuthFetch = navigate;
+    return () => {
+      window.navigateForAuthFetch = undefined;
+    };
+  }, [navigate]);
+  return null;
+}
+
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('currentUser');
@@ -38,6 +49,7 @@ function App() {
 
   return (
     <Router>
+      <SetGlobalNavigate />
       <Routes>
         <Route
           path="/" element={<Homescreen currentUser={currentUser} setCurrentUser={setCurrentUser} />} />

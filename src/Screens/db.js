@@ -2,6 +2,7 @@
 import towns from "../data/towns.json";
 import psgcTowns from "../data/psgc_towns.json";
 import { API_BASE_URL } from '../utils/api';
+import authFetch from '../utils/authFetch';
 
 // Only keep towns and PSGC mapping for name resolution/backups
 export const db = {
@@ -13,10 +14,11 @@ export const db = {
 export const getUserById = async (id, token) => {
 	const headers = {};
 	if (token) headers['Authorization'] = `Bearer ${token}`;
-	const resp = await fetch(`${API_BASE_URL}/api/users/${id}/profile`, {
+	const navigate = window.navigateForAuthFetch;
+	const resp = await authFetch(`${API_BASE_URL}/api/users/${id}/profile`, {
 		headers,
 		credentials: 'include',
-	});
+	}, navigate);
 	if (!resp.ok) throw new Error('Failed to fetch user profile');
 	return await resp.json();
 };
@@ -63,10 +65,11 @@ export const getTrafficForTown = (townId) => null;
 export const getRecentSelectionsForUser = async (userId, token) => {
 	const headers = {};
 	if (token) headers['Authorization'] = `Bearer ${token}`;
-	const resp = await fetch(`/api/users/${userId}/travel-history?limit=3`, {
+	const navigate = window.navigateForAuthFetch;
+	const resp = await authFetch(`${API_BASE_URL}/api/users/${userId}/travel-history?limit=3`, {
 		headers,
 		credentials: 'include',
-	});
+	}, navigate);
 	if (!resp.ok) throw new Error('Failed to fetch travel history');
 	const trips = await resp.json();
 	// Add town_name using PSGC mapping if needed
@@ -96,12 +99,13 @@ export function authenticateUser(username, password) {
 export const upgradeSubscription = async (userId, token, newStatus) => {
 	const headers = { 'Content-Type': 'application/json' };
 	if (token) headers['Authorization'] = `Bearer ${token}`;
-	const resp = await fetch(`/api/users/${userId}/subscription`, {
+	const navigate = window.navigateForAuthFetch;
+	const resp = await authFetch(`${API_BASE_URL}/api/users/${userId}/subscription`, {
 		method: 'POST',
 		headers,
 		credentials: 'include',
 		body: JSON.stringify({ subscription_status: newStatus })
-	});
+	}, navigate);
 	if (!resp.ok) throw new Error('Failed to update subscription');
 	return await resp.json();
 };
@@ -110,12 +114,13 @@ export const upgradeSubscription = async (userId, token, newStatus) => {
 export const logTrip = async (userId, token, tripData) => {
 	const headers = { 'Content-Type': 'application/json' };
 	if (token) headers['Authorization'] = `Bearer ${token}`;
-	const resp = await fetch(`/api/users/${userId}/travel-history`, {
+	const navigate = window.navigateForAuthFetch;
+	const resp = await authFetch(`${API_BASE_URL}/api/users/${userId}/travel-history`, {
 		method: 'POST',
 		headers,
 		credentials: 'include',
 		body: JSON.stringify(tripData)
-	});
+	}, navigate);
 	if (!resp.ok) throw new Error('Failed to log trip');
 	return await resp.json();
 };
