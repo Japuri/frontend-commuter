@@ -1,6 +1,7 @@
 // Only keep towns and PSGC mapping for name resolution
 import towns from "../data/towns.json";
 import psgcTowns from "../data/psgc_towns.json";
+import { API_BASE_URL } from '../utils/api';
 
 // Only keep towns and PSGC mapping for name resolution/backups
 export const db = {
@@ -12,7 +13,7 @@ export const db = {
 export const getUserById = async (id, token) => {
 	const headers = {};
 	if (token) headers['Authorization'] = `Bearer ${token}`;
-	const resp = await fetch(`/api/users/${id}/profile`, {
+	const resp = await fetch(`${API_BASE_URL}/api/users/${id}/profile`, {
 		headers,
 		credentials: 'include',
 	});
