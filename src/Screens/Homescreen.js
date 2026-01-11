@@ -436,6 +436,10 @@ function Homescreen({ currentUser, setCurrentUser }) {
                       className="btn-neon-fill"
                       disabled={useJeepneyMode ? !selectedJeepneyRoute || !selectedJeepneyRoute.stops || selectedJeepneyRoute.stops.length < 2 : (!startTown || !endTown || startTown === endTown)}
                       onClick={() => {
+                        if (!currentUser) {
+                          navigate("/signin");
+                          return;
+                        }
                         if (useJeepneyMode) {
                           // Only allow if route has stops
                           if (selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2) {
