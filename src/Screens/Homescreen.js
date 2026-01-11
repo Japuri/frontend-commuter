@@ -76,6 +76,14 @@ function Homescreen({ currentUser, setCurrentUser }) {
   // Show stops estimation after planning jeepney route
   const [showJeepneyStops, setShowJeepneyStops] = useState(false);
 
+  // Ensure selectedJeepneyRoute is not reset when toggling modes
+  useEffect(() => {
+    if (!useJeepneyMode) {
+      setShowJeepneyStops(false);
+      setSelectedJeepneyRoute(null); // Reset selected jeepney route when switching to town-to-town
+    }
+  }, [useJeepneyMode]);
+
   // Persist town selections in sessionStorage
   const handleSetStartTown = (val) => {
     setStartTown(val);
@@ -395,7 +403,10 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
                   {useJeepneyMode ? (
                     <JeepneyRouteSelector
-                      onRouteSelect={setSelectedJeepneyRoute}
+                      onRouteSelect={(route) => {
+                        setSelectedJeepneyRoute(route);
+                        setShowJeepneyStops(false); // Reset stops view on new selection
+                      }}
                       selectedRoute={selectedJeepneyRoute}
                     />
                   ) : (
@@ -422,10 +433,13 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                     <button
                       className="btn-neon-fill"
-                      disabled={useJeepneyMode ? !selectedJeepneyRoute : (!startTown || !endTown || startTown === endTown)}
+                      disabled={useJeepneyMode ? !selectedJeepneyRoute || !selectedJeepneyRoute.stops || selectedJeepneyRoute.stops.length < 2 : (!startTown || !endTown || startTown === endTown)}
                       onClick={() => {
                         if (useJeepneyMode) {
-                          setShowJeepneyStops(true);
+                          // Only allow if route has stops
+                          if (selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2) {
+                            setShowJeepneyStops(true);
+                          }
                         } else {
                           // Only log if user is authenticated
                           if (currentUser?.id) {
@@ -681,15 +695,16 @@ function Homescreen({ currentUser, setCurrentUser }) {
             {(!useJeepneyMode || (useJeepneyMode && !showJeepneyStops)) && (
               <div className="jeeproute-map">
                 <Mapbox3DMap 
-                  estimation={estimation} 
+                  estimation={useJeepneyMode ? null : estimation} 
                   selectedJeepneyRoute={useJeepneyMode ? selectedJeepneyRoute : null}
-                  key={String(startTown) + '-' + String(endTown) + '-' + String(routeRequested) + '-' + (selectedJeepneyRoute?.color || '')}
+                  key={String(useJeepneyMode) + '-' + String(startTown) + '-' + String(endTown) + '-' + String(routeRequested) + '-' + (selectedJeepneyRoute?.color || '')}
                 />
               </div>
             )}
             {/* Show jeepney stops estimation after planning in jeepney mode */}
-            {useJeepneyMode && showJeepneyStops && selectedJeepneyRoute && (
+            {useJeepneyMode && showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
               <JeepneyStopsEstimation 
+                key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
                 route={selectedJeepneyRoute} 
                 onBack={() => setShowJeepneyStops(false)}
               />
