@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Spinner from "../Components/Spinner";
 import { useNavigate } from "react-router-dom";
 import TownSelector from "../Components/TownSelector";
 import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
@@ -472,6 +473,11 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   </div>
                 </div>
 
+                {estimation && estimation.loading && (
+                  <div className="plan-card free">
+                    <Spinner size={54} color="#00d4ff" text="Calculating Estimation..." />
+                  </div>
+                )}
                 {estimation && !estimation.loading && !estimation.error && (
                   <div className="plan-card free">
                     <div className="plan-header">Travel Estimation</div>

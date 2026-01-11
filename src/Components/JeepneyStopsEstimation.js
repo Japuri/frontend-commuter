@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Spinner from './Spinner';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -48,7 +49,7 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
         {route.color} Route: {route.route}
       </div>
       {loading ? (
-        <div style={{ color: '#7f94a8', fontSize: 15, textAlign: 'center', margin: '18px 0' }}>Loading ETAs...</div>
+        <Spinner size={54} color={route.hex} text="Calculating ETAs..." />
       ) : error ? (
         <div style={{ color: 'red', fontSize: 15, textAlign: 'center', margin: '18px 0' }}>{error}</div>
       ) : (
