@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TownSelector from "../Components/TownSelector";
+import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
 import { db, getTownById, logTrip } from "./db";
+import JeepneyLegend from "../Components/JeepneyLegend";
 import { logTravel } from "../services/travelLogger";
 import {
   weatherBadgeFor,
@@ -63,6 +65,9 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [endTown, setEndTown] = useState(
     () => sessionStorage.getItem("endTown") || ""
   );
+  // Jeepney route selection state
+  const [selectedJeepneyRoute, setSelectedJeepneyRoute] = useState(null);
+  const [useJeepneyMode, setUseJeepneyMode] = useState(true);
   // Congratulatory popup state
   const [showCongrats, setShowCongrats] = useState(false);
 
@@ -310,6 +315,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
   return (
     <>
+      {/* <JeepneyLegend /> removed as per request */}
       <CongratsModal />
       <div className="jeeproute-page">
         <div className="jeeproute-navbar">
@@ -365,27 +371,54 @@ function Homescreen({ currentUser, setCurrentUser }) {
               </div>
               <div className="sidebar">
                 <div className="plan-card free">
-                  <div className="plan-header">Select Route</div>
-                  <TownSelector
-                    towns={towns}
-                    startTown={startTown}
-                    endTown={endTown}
-                    setStartTown={handleSetStartTown}
-                    setEndTown={handleSetEndTown}
-                    layout="start"
-                  />
-                  <TownSelector
-                    towns={towns}
-                    startTown={startTown}
-                    endTown={endTown}
-                    setStartTown={setStartTown}
-                    setEndTown={handleSetEndTown}
-                    layout="end"
-                  />
+                  {/* Mode Toggle */}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 16, padding: '8px', background: 'rgba(30,38,49,0.3)', borderRadius: 8 }}>
+                    <button
+                      className={useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
+                      style={{ flex: 1, fontSize: 13, padding: '6px 12px' }}
+                      onClick={() => setUseJeepneyMode(true)}
+                    >
+                      🚍 Jeepney Routes
+                    </button>
+                    <button
+                      className={!useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
+                      style={{ flex: 1, fontSize: 13, padding: '6px 12px' }}
+                      onClick={() => setUseJeepneyMode(false)}
+                    >
+                      📍 Town to Town
+                    </button>
+                  </div>
+
+                  {useJeepneyMode ? (
+                    <JeepneyRouteSelector
+                      onRouteSelect={setSelectedJeepneyRoute}
+                      selectedRoute={selectedJeepneyRoute}
+                    />
+                  ) : (
+                    <>
+                      <div className="plan-header">Select Route</div>
+                      <TownSelector
+                        towns={towns}
+                        startTown={startTown}
+                        endTown={endTown}
+                        setStartTown={handleSetStartTown}
+                        setEndTown={handleSetEndTown}
+                        layout="start"
+                      />
+                      <TownSelector
+                        towns={towns}
+                        startTown={startTown}
+                        endTown={endTown}
+                        setStartTown={setStartTown}
+                        setEndTown={handleSetEndTown}
+                        layout="end"
+                      />
+                    </>
+                  )}
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                     <button
                       className="btn-neon-fill"
-                      disabled={!startTown || !endTown || startTown === endTown}
+                      disabled={useJeepneyMode ? !selectedJeepneyRoute : (!startTown || !endTown || startTown === endTown)}
                       onClick={() => {
                         // Only log if user is authenticated
                         if (currentUser?.id) {
@@ -639,7 +672,11 @@ function Homescreen({ currentUser, setCurrentUser }) {
             </div>
 
             <div className="jeeproute-map">
-              <Mapbox3DMap estimation={estimation} />
+              {/* Force remount by key: start/end/routeRequested */}
+              <Mapbox3DMap 
+                estimation={estimation} 
+                key={String(startTown) + '-' + String(endTown) + '-' + String(routeRequested)}
+              />
             </div>
           </div>
         </div>
@@ -651,13 +688,14 @@ function Homescreen({ currentUser, setCurrentUser }) {
 // Mapbox 3D Map Component
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 
+
 function Mapbox3DMap({ estimation }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
+  const [routeCoords, setRouteCoords] = useState(null);
 
   // Helper: get traffic color
   function getTrafficColor(trafficData) {
-    // You can adjust this logic as needed
     const severity = trafficSeverityFromData
       ? trafficSeverityFromData(trafficData)
       : 0;
@@ -665,6 +703,32 @@ function Mapbox3DMap({ estimation }) {
     if (severity >= 40) return "#f1c40f"; // yellow
     return "#27ae60"; // green
   }
+
+  // Fetch road-following route from Mapbox Directions API
+  useEffect(() => {
+    async function fetchRoute() {
+      if (!estimation?.start || !estimation?.end) {
+        setRouteCoords(null);
+        return;
+      }
+      const start = `${estimation.start.lng},${estimation.start.lat}`;
+      const end = `${estimation.end.lng},${estimation.end.lat}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const coords = data.routes?.[0]?.geometry?.coordinates;
+        if (coords && coords.length > 1) {
+          setRouteCoords(coords);
+        } else {
+          setRouteCoords(null);
+        }
+      } catch {
+        setRouteCoords(null);
+      }
+    }
+    fetchRoute();
+  }, [estimation]);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -675,6 +739,7 @@ function Mapbox3DMap({ estimation }) {
       }
       return;
     }
+    if (!routeCoords) return;
 
     // Clean up previous map instance
     if (mapRef.current) {
@@ -686,18 +751,16 @@ function Mapbox3DMap({ estimation }) {
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v11",
-      center: [estimation.start.lng, estimation.start.lat],
-      zoom: 10,
+      center: routeCoords[0],
+      zoom: 12,
       pitch: 50,
       bearing: 0,
       antialias: true,
     });
     mapRef.current = map;
 
-    // Add navigation controls
     map.addControl(new mapboxgl.NavigationControl());
 
-    // Add 3D buildings layer on load
     map.on("load", () => {
       // 3D buildings
       const layers = map.getStyle().layers;
@@ -731,10 +794,7 @@ function Mapbox3DMap({ estimation }) {
           type: "Feature",
           geometry: {
             type: "LineString",
-            coordinates: [
-              [estimation.start.lng, estimation.start.lat],
-              [estimation.end.lng, estimation.end.lat],
-            ],
+            coordinates: routeCoords,
           },
         },
       });
@@ -754,11 +814,11 @@ function Mapbox3DMap({ estimation }) {
 
       // Add start marker
       new mapboxgl.Marker({ color: "#0074D9" })
-        .setLngLat([estimation.start.lng, estimation.start.lat])
+        .setLngLat(routeCoords[0])
         .addTo(map);
       // Add end marker
       new mapboxgl.Marker({ color: "#FF4136" })
-        .setLngLat([estimation.end.lng, estimation.end.lat])
+        .setLngLat(routeCoords[routeCoords.length - 1])
         .addTo(map);
     });
 
@@ -768,7 +828,7 @@ function Mapbox3DMap({ estimation }) {
         mapRef.current = null;
       }
     };
-  }, [estimation]);
+  }, [estimation, routeCoords]);
 
   return (
     <div
@@ -786,6 +846,11 @@ function Mapbox3DMap({ estimation }) {
           Selected route shows here
         </div>
       ) : null}
+      {estimation?.start && estimation?.end && !routeCoords && (
+        <div style={{ textAlign: "center", paddingTop: 120, color: "#888" }}>
+          Loading road route...
+        </div>
+      )}
     </div>
   );
 }
