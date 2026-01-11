@@ -5,7 +5,14 @@ export const JEEPNEY_ROUTE_COLORS = [
     color: "Gray",
     hex: "#888888",
     route: "Checkpoint – Balibago – Pampang",
-    keyPlaces: ["Nepo Mall", "Astro Park", "Marquee"]
+    keyPlaces: ["Nepo Mall", "Astro Park", "Marquee"],
+    stops: [
+      { name: "Checkpoint", lat: 15.150, lng: 120.590 },
+      { name: "Nepo Mall", lat: 15.147, lng: 120.591 },
+      { name: "Astro Park", lat: 15.145, lng: 120.592 },
+      { name: "Marquee", lat: 15.143, lng: 120.593 },
+      { name: "Pampang", lat: 15.140, lng: 120.595 }
+    ]
   },
   {
     color: "White",

@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TownSelector from "../Components/TownSelector";
 import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
+import JeepneyStopsEstimation from "../Components/JeepneyStopsEstimation";
 import { db, getTownById, logTrip } from "./db";
-import JeepneyLegend from "../Components/JeepneyLegend";
+// import JeepneyLegend from "../Components/JeepneyLegend";
 import { logTravel } from "../services/travelLogger";
 import {
   weatherBadgeFor,
@@ -12,8 +13,10 @@ import {
   confidenceFromIndicators,
   applyPremiumOverrides,
 } from "../utils/metrics";
+
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+// import { JEEPNEY_ROUTE_COLORS } from '../data/jeepney_routes';
 
 function Homescreen({ currentUser, setCurrentUser }) {
   // AI Suggestion state for premium users
@@ -70,6 +73,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [useJeepneyMode, setUseJeepneyMode] = useState(true);
   // Congratulatory popup state
   const [showCongrats, setShowCongrats] = useState(false);
+  // Show stops estimation after planning jeepney route
+  const [showJeepneyStops, setShowJeepneyStops] = useState(false);
 
   // Persist town selections in sessionStorage
   const handleSetStartTown = (val) => {
@@ -86,7 +91,6 @@ function Homescreen({ currentUser, setCurrentUser }) {
       sessionStorage.setItem("endTown", val);
       // Log trip to backend when user selects an end town
       if (currentUser?.id && currentUser?.token && startTown && val) {
-        const startTownData = getTownById(startTown);
         const endTownData = getTownById(val);
         console.log('Logging trip:', { userId: currentUser.id, startTown, endTown: val });
         const result = await logTrip(currentUser.id, currentUser.token, {
@@ -420,31 +424,33 @@ function Homescreen({ currentUser, setCurrentUser }) {
                       className="btn-neon-fill"
                       disabled={useJeepneyMode ? !selectedJeepneyRoute : (!startTown || !endTown || startTown === endTown)}
                       onClick={() => {
-                        // Only log if user is authenticated
-                        if (currentUser?.id) {
-                          // find town name from towns list or fallback
-                          let townName = undefined;
-                          try {
-                            const byId = towns.find(
-                              (t) => String(t.id) === String(endTown)
-                            );
-                            townName = byId?.name;
-                            if (!townName) {
-                              const fallback = getTownById(endTown);
-                              townName = fallback?.name;
-                            }
-                          } catch {}
-                          try {
-                            logTravel({
-                              user_id: currentUser.id,
-                              town_id: endTown,
-                              town_name: townName,
-                              selected_at: new Date().toISOString(),
-                            });
-                          } catch {}
+                        if (useJeepneyMode) {
+                          setShowJeepneyStops(true);
+                        } else {
+                          // Only log if user is authenticated
+                          if (currentUser?.id) {
+                            let townName = undefined;
+                            try {
+                              const byId = towns.find(
+                                (t) => String(t.id) === String(endTown)
+                              );
+                              townName = byId?.name;
+                              if (!townName) {
+                                const fallback = getTownById(endTown);
+                                townName = fallback?.name;
+                              }
+                            } catch {}
+                            try {
+                              logTravel({
+                                user_id: currentUser.id,
+                                town_id: endTown,
+                                town_name: townName,
+                                selected_at: new Date().toISOString(),
+                              });
+                            } catch {}
+                          }
+                          setRouteRequested(true);
                         }
-                        // trigger route
-                        setRouteRequested(true);
                       }}
                     >
                       Plan Route
@@ -671,13 +677,23 @@ function Homescreen({ currentUser, setCurrentUser }) {
               </div>
             </div>
 
-            <div className="jeeproute-map">
-              {/* Force remount by key: start/end/routeRequested */}
-              <Mapbox3DMap 
-                estimation={estimation} 
-                key={String(startTown) + '-' + String(endTown) + '-' + String(routeRequested)}
+            {/* Show map only for town-to-town mode, or jeepney mode before planning */}
+            {(!useJeepneyMode || (useJeepneyMode && !showJeepneyStops)) && (
+              <div className="jeeproute-map">
+                <Mapbox3DMap 
+                  estimation={estimation} 
+                  selectedJeepneyRoute={useJeepneyMode ? selectedJeepneyRoute : null}
+                  key={String(startTown) + '-' + String(endTown) + '-' + String(routeRequested) + '-' + (selectedJeepneyRoute?.color || '')}
+                />
+              </div>
+            )}
+            {/* Show jeepney stops estimation after planning in jeepney mode */}
+            {useJeepneyMode && showJeepneyStops && selectedJeepneyRoute && (
+              <JeepneyStopsEstimation 
+                route={selectedJeepneyRoute} 
+                onBack={() => setShowJeepneyStops(false)}
               />
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -688,8 +704,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
 // Mapbox 3D Map Component
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 
-
-function Mapbox3DMap({ estimation }) {
+function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const [routeCoords, setRouteCoords] = useState(null);
@@ -820,6 +835,23 @@ function Mapbox3DMap({ estimation }) {
       new mapboxgl.Marker({ color: "#FF4136" })
         .setLngLat(routeCoords[routeCoords.length - 1])
         .addTo(map);
+
+      // Add jeepney stops if a route is selected and has stops
+      if (selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length > 0) {
+        selectedJeepneyRoute.stops.forEach((stop, idx) => {
+          const marker = new mapboxgl.Marker({ color: selectedJeepneyRoute.hex })
+            .setLngLat([stop.lng, stop.lat])
+            .addTo(map);
+          // Add a popup with stop number
+          const stopNum = idx + 1;
+          let suffix = 'th';
+          if (stopNum === 1) suffix = 'st';
+          else if (stopNum === 2) suffix = 'nd';
+          else if (stopNum === 3) suffix = 'rd';
+          marker.setPopup(new mapboxgl.Popup({ offset: 18 })
+            .setText(`${stopNum}${suffix} stop: ${stop.name}`));
+        });
+      }
     });
 
     return () => {
@@ -828,7 +860,7 @@ function Mapbox3DMap({ estimation }) {
         mapRef.current = null;
       }
     };
-  }, [estimation, routeCoords]);
+  }, [estimation, routeCoords, selectedJeepneyRoute]);
 
   return (
     <div
