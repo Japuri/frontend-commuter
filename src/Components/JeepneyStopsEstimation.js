@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Spinner from './Spinner';
 
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+// TODO: Replace with your actual Mapbox access token
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiamFwdXJpIiwiYSI6ImNtampoeW10czIxMW8zZHF4dTE2cGJ5bHMifQ.vcz9vRGxvmuiRYQlO8iaXg';
 
 export default function JeepneyStopsEstimation({ route, onBack }) {
   const [etas, setEtas] = useState([]);
