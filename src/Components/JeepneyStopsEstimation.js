@@ -1,7 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import Spinner from './Spinner';
-
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+import authFetch from '../utils/authFetch';
 
 export default function JeepneyStopsEstimation({ route, onBack }) {
   const [etas, setEtas] = useState([]);
@@ -17,20 +17,20 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
         setLoading(false);
         return;
       }
-      let cumulative = 0;
-      const etaArr = [{ eta: 0, name: route.stops[0].name }];
       try {
-        for (let i = 1; i < route.stops.length; i++) {
-          const prev = route.stops[i - 1];
-          const curr = route.stops[i];
-          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${prev.lng},${prev.lat};${curr.lng},${curr.lat}?overview=false&access_token=${MAPBOX_TOKEN}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          const duration = data.routes?.[0]?.duration || 0; // seconds
-          cumulative += Math.round(duration / 60); // minutes
-          etaArr.push({ eta: cumulative, name: curr.name });
+        // Call backend endpoint for ETA calculation
+        const res = await authFetch('/api/mapbox-eta', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ stops: route.stops }),
+        });
+        if (!res.ok) {
+          throw new Error('Failed to fetch ETA');
         }
-        setEtas(etaArr);
+        const data = await res.json();
+        setEtas(data.etas || []);
       } catch (e) {
         setError('Failed to fetch ETA.');
       }
