@@ -18,7 +18,7 @@ export default function JeepneyRouteSelector({ onRouteSelect, selectedRoute }) {
   };
 
   return (
-    <div style={{ marginBottom: 16, maxHeight: 340, overflowY: 'auto', paddingRight: 4 }}>
+    <div style={{ marginBottom: 16, maxHeight: 180, overflowY: 'auto', paddingRight: 4 }}>
       <div className="plan-header" style={{ marginBottom: 12 }}>Select Jeepney Route</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {JEEPNEY_ROUTE_COLORS.map((route) => {

@@ -76,6 +76,9 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [showCongrats, setShowCongrats] = useState(false);
   // Show stops estimation after planning jeepney route
   const [showJeepneyStops, setShowJeepneyStops] = useState(false);
+  const [showPremiumInfo, setShowPremiumInfo] = useState(false);
+  const [showUpgradeInfo, setShowUpgradeInfo] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(null);
 
   // Ensure selectedJeepneyRoute is not reset when toggling modes
   useEffect(() => {
@@ -126,13 +129,31 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [estimation, setEstimation] = useState(null);
   const [routeRequested, setRouteRequested] = useState(false);
   const navigate = useNavigate();
-  const premiumCardRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.__premiumConfig) {
       applyPremiumOverrides(window.__premiumConfig);
     }
   }, []);
+
+  useEffect(() => {
+    if (currentUser?.is_premium) {
+      setShowUpgradeInfo(false);
+    } else {
+      setShowPremiumInfo(false);
+      setActiveFeature(null);
+    }
+  }, [currentUser?.is_premium]);
+
+  useEffect(() => {
+    if (
+      !currentUser?.is_premium ||
+      !estimation ||
+      estimation.error
+    ) {
+      setActiveFeature(null);
+    }
+  }, [currentUser?.is_premium, estimation]);
 
   useEffect(() => {
     // Fetch Pampanga towns from backend proxy endpoint
@@ -326,6 +347,248 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
   const loggedIn = !!currentUser;
 
+  const estimationReady = Boolean(estimation) && !estimation?.loading && !estimation?.error;
+  const insightsReady = currentUser?.is_premium && estimationReady;
+  const temperature = estimationReady
+    ? (estimation?.weatherData?.temp_c ??
+        estimation?.weatherData?.temperature ??
+        estimation?.weatherData?.temp ??
+        null)
+    : null;
+  const weatherLabel = estimationReady
+    ? (estimation?.weatherData?.condition ??
+        estimation?.weatherData?.description ??
+        estimation?.weather ??
+        "Live weather radar")
+    : estimation?.weather || "Live weather radar";
+  const weatherSummary = estimation
+    ? estimation.loading
+      ? "Fetching weather..."
+      : typeof temperature === "number"
+        ? `${Math.round(temperature)}°C • ${weatherLabel}`
+        : weatherLabel || "Weather data ready"
+    : "Plan a route for weather data";
+  const trafficSummary = estimation
+    ? estimation.loading
+      ? "Calculating traffic..."
+      : estimation.traffic || "Traffic pulse ready"
+    : "Plan a route for traffic data";
+  const aiSummary =
+    aiSuggestion?.window ||
+    (insightsReady
+      ? "AI guidance standing by"
+      : estimation?.loading
+        ? "Calibrating AI..."
+        : "Plan a trip to activate AI");
+  const analyticsSummary = estimation
+    ? estimation.loading
+      ? "Crunching numbers..."
+      : typeof estimation.distanceKm === "number"
+        ? `${Math.round(estimation.distanceKm)} km range`
+        : "Trip analytics dashboard"
+    : "Trip analytics dashboard";
+
+  const trafficSeverity = insightsReady
+    ? trafficSeverityFromData(estimation.trafficData)
+    : 0;
+  const weatherBadgeName = insightsReady
+    ? weatherBadgeFor(estimation.weather)
+    : "badge-info";
+  const trafficBadgeName = insightsReady
+    ? trafficBadgeFor(estimation.traffic)
+    : "badge-info";
+  const minEta = insightsReady
+    ? Math.max(5, Math.round(estimation.minutes - 4))
+    : null;
+  const maxEta = insightsReady ? Math.round(estimation.minutes + 6) : null;
+  const confidence = insightsReady
+    ? confidenceFromIndicators(trafficSeverity, weatherBadgeName)
+    : null;
+
+  const premiumFeatureCards = [
+    {
+      key: "weather",
+      icon: "🌦️",
+      title: "Weather Monitor",
+      status: weatherSummary,
+    },
+    {
+      key: "traffic",
+      icon: "🚦",
+      title: "Traffic Pulse",
+      status: trafficSummary,
+    },
+    {
+      key: "ai",
+      icon: "🤖",
+      title: "AI Guidance",
+      status: aiSummary,
+    },
+    {
+      key: "analytics",
+      icon: "📊",
+      title: "Route Analytics",
+      status: analyticsSummary,
+    },
+  ];
+
+  const freeFeatureCards = [
+    {
+      key: "travel",
+      icon: "🧭",
+      title: "Travel Estimation",
+      status: estimation
+        ? estimation.loading
+          ? "Calculating ETA..."
+          : `${estimation.minutes} mins`
+        : "Plan a trip to see ETA",
+      detail: "Quick arrival estimates for every town-to-town route.",
+    },
+    {
+      key: "distance",
+      icon: "📏",
+      title: "Distance Tracker",
+      status: estimation
+        ? estimation.loading
+          ? "Measuring distance..."
+          : `${estimation.distanceKm ?? "—"} km`
+        : "Enter start and end towns",
+      detail: "Shows how far your selected route spans across Pampanga.",
+    },
+  ];
+
+  const handleFeatureClick = (key) => {
+    if (!currentUser?.is_premium || !estimation) return;
+    setActiveFeature((prev) => (prev === key ? null : key));
+  };
+
+  const renderFeaturePopover = () => {
+    if (!currentUser?.is_premium || !estimation || !activeFeature) return null;
+
+    const weatherDetails = estimation?.weatherData || {};
+    const humidity = weatherDetails.humidity ?? weatherDetails.humidity_pct;
+    const wind = weatherDetails.wind_kph ?? weatherDetails.wind_speed_kph;
+
+    let title = "Insights";
+    let body = null;
+
+    if (activeFeature === "weather") {
+      title = "Live Weather";
+      body = (
+        <div className="popover-section">
+          <div className={`badge ${weatherBadgeName}`} style={{ marginBottom: 8 }}>
+            {typeof temperature === "number"
+              ? `${Math.round(temperature)}°C • ${weatherLabel}`
+              : weatherLabel}
+          </div>
+          <ul className="popover-list">
+            <li>Condition: {weatherLabel || "Unknown"}</li>
+            <li>Humidity: {humidity != null ? `${humidity}%` : "N/A"}</li>
+            <li>Wind: {wind != null ? `${wind} kph` : "N/A"}</li>
+            <li>
+              Updated: {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </li>
+          </ul>
+        </div>
+      );
+    }
+
+    if (activeFeature === "traffic") {
+      title = "Traffic & ETA";
+      body = (
+        <div className="popover-section">
+          <p className="popover-line">
+            Estimated Time: <strong>{estimation.minutes} mins</strong>
+          </p>
+          <p className="popover-line">
+            Distance: <strong>{estimation.distanceKm ?? "—"} km</strong>
+          </p>
+          <div className="meter-row" style={{ margin: "10px 0" }}>
+            <div className="meter-track">
+              <div className="meter-fill" style={{ width: `${trafficSeverity}%` }} />
+            </div>
+            <span className={`badge ${trafficBadgeName}`}>{estimation.traffic}</span>
+          </div>
+          <div className="popover-badges">
+            <span className="badge badge-ok">
+              Arrival: {minEta}–{maxEta} mins
+            </span>
+            <span className="badge badge-warn">Confidence: {confidence}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeFeature === "ai") {
+      title = "AI Guidance";
+      body = (
+        <div className="popover-section ai">
+          <button
+            className="btn-neon-fill"
+            style={{ width: "100%", marginBottom: 10 }}
+            onClick={handleActivateAIMode}
+            disabled={aiLoading}
+          >
+            {aiLoading ? "Summoning AI..." : "Generate AI Suggestion"}
+          </button>
+          {aiError && (
+            <p className="popover-line" style={{ color: "#ff6b6b" }}>
+              {aiError}
+            </p>
+          )}
+          {aiSuggestion ? (
+            <div className="popover-card">
+              <p className="popover-line">
+                Optimal Departure: <strong>{aiSuggestion.window || "N/A"}</strong>
+              </p>
+              <p className="popover-line" style={{ color: "#8abfde" }}>
+                {aiSuggestion.rationale || "Insights calibrated"}
+              </p>
+            </div>
+          ) : (
+            <p className="popover-line" style={{ color: "#8abfde" }}>
+              AI mode provides proactive departure guidance once generated.
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    if (activeFeature === "analytics") {
+      title = "Route Analytics";
+      body = (
+        <div className="popover-section">
+          <ul className="popover-list">
+            <li>
+              From <strong>{estimation.start?.name || estimation.start?.id}</strong> to
+              {" "}
+              <strong>{estimation.end?.name || estimation.end?.id}</strong>
+            </li>
+            <li>Distance: {estimation.distanceKm ?? "—"} km</li>
+            <li>ETA: {estimation.minutes} mins ({confidence} confidence)</li>
+          </ul>
+        </div>
+      );
+    }
+
+    return (
+      <div className="feature-popover" role="dialog" aria-live="polite">
+        <div className="feature-popover-head">
+          <h4>{title}</h4>
+          <button
+            type="button"
+            className="feature-popover-close"
+            aria-label="Close insights"
+            onClick={() => setActiveFeature(null)}
+          >
+            ×
+          </button>
+        </div>
+        {body}
+      </div>
+    );
+  };
+
   return (
     <>
       {/* <JeepneyLegend /> removed as per request */}
@@ -377,8 +640,9 @@ function Homescreen({ currentUser, setCurrentUser }) {
           </div>
         </div>
         <div className="jeeprout-layout">
-          <div className="jeeproute-container">
-            <div className="jeeproute-left">
+          <div className="jeeproute-grid-container">
+            {/* Top Left: Jeep Routes */}
+            <div className="grid-jeep-routes">
               <div className="subtitle">
                 Smart Jeepney Planning for Pampanga Students
               </div>
@@ -403,15 +667,17 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   </div>
 
                   {useJeepneyMode ? (
-                    <JeepneyRouteSelector
-                      onRouteSelect={(route) => {
-                        setSelectedJeepneyRoute(route);
-                        setShowJeepneyStops(false); // Reset stops view on new selection
-                      }}
-                      selectedRoute={selectedJeepneyRoute}
-                    />
+                    <div className="jeeproute-select-block">
+                      <JeepneyRouteSelector
+                        onRouteSelect={(route) => {
+                          setSelectedJeepneyRoute(route);
+                          setShowJeepneyStops(false); // Reset stops view on new selection
+                        }}
+                        selectedRoute={selectedJeepneyRoute}
+                      />
+                    </div>
                   ) : (
-                    <>
+                    <div className="jeeproute-select-block">
                       <div className="plan-header">Select Route</div>
                       <TownSelector
                         towns={towns}
@@ -429,9 +695,9 @@ function Homescreen({ currentUser, setCurrentUser }) {
                         setEndTown={handleSetEndTown}
                         layout="end"
                       />
-                    </>
+                    </div>
                   )}
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <div className="jeeproute-actions-row">
                     <button
                       className="btn-neon-fill"
                       disabled={useJeepneyMode ? !selectedJeepneyRoute || !selectedJeepneyRoute.stops || selectedJeepneyRoute.stops.length < 2 : (!startTown || !endTown || startTown === endTown)}
@@ -476,234 +742,17 @@ function Homescreen({ currentUser, setCurrentUser }) {
                     </button>
                   </div>
                 </div>
-
-                {estimation && estimation.loading && (
-                  <div className="plan-card free">
-                    <Spinner size={54} color="#00d4ff" text="Calculating Estimation..." />
-                  </div>
-                )}
-                {estimation && !estimation.loading && !estimation.error && (
-                  <div className="plan-card free">
-                    <div className="plan-header">Travel Estimation</div>
-                    <p className="included">
-                      Estimated Time: {estimation.minutes} mins
-                    </p>
-                    <p className="included">
-                      Distance: {estimation.distanceKm} km
-                    </p>
-                    {currentUser?.is_premium ? (
-                      (() => {
-                        const trafficSeverity = trafficSeverityFromData(
-                          estimation.trafficData
-                        );
-                        const weatherBadge = weatherBadgeFor(
-                          estimation.weather
-                        );
-                        const trafficBadge = trafficBadgeFor(
-                          estimation.traffic
-                        );
-                        const minEta = Math.max(
-                          5,
-                          Math.round(estimation.minutes - 4)
-                        );
-                        const maxEta = Math.round(estimation.minutes + 6);
-                        const confidence = confidenceFromIndicators(
-                          trafficSeverity,
-                          weatherBadge
-                        );
-                        return (
-                          <div className="premium-info">
-                            <div className="premium-grid">
-                              <div className="premium-tile">
-                                <div className="premium-title">
-                                  <span>🌦️</span> Weather
-                                </div>
-                                <div className={`badge ${weatherBadge}`}>
-                                  <span>
-                                    {estimation.weatherData
-                                      ? `${estimation.weatherData.temp_c}°C • ${
-                                          estimation.weatherData.condition ||
-                                          estimation.weatherData.description
-                                        }`
-                                      : estimation.weather}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="premium-tile">
-                                <div className="premium-title">
-                                  <span>🚦</span> Traffic
-                                </div>
-                                <div className="meter-row">
-                                  <div className="meter-track">
-                                    <div
-                                      className="meter-fill"
-                                      style={{ width: `${trafficSeverity}%` }}
-                                    />
-                                  </div>
-                                  <span
-                                    className={`badge ${trafficBadge} nowrap`}
-                                  >
-                                    {estimation.traffic}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="premium-tile">
-                                <div className="premium-title">
-                                  <span>🧠</span> Rationale
-                                </div>
-                                <div
-                                  className="premium-desc"
-                                  style={{ color: "#a9c3d7" }}
-                                >
-                                  {estimation.rationale}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="premium-footer">
-                              <div className="badge badge-ok">
-                                Arrival Window: {minEta}–{maxEta} mins
-                              </div>
-                              <div className="badge badge-warn">
-                                Confidence: {confidence}
-                              </div>
-                              <div className="badge badge-info">
-                                ✨ Premium Insights enabled
-                              </div>
-                            </div>
-                            <div style={{ marginTop: 16 }}>
-                              <button
-                                className="btn-neon-fill"
-                                style={{ minWidth: 180 }}
-                                onClick={handleActivateAIMode}
-                                disabled={aiLoading}
-                              >
-                                {aiLoading
-                                  ? "Loading AI Suggestion..."
-                                  : "Activate AI mode"}
-                              </button>
-                            </div>
-                            {aiError && (
-                              <div
-                                className="premium-desc"
-                                style={{ color: "#ff6b6b", marginTop: 8 }}
-                              >
-                                {aiError}
-                              </div>
-                            )}
-                            {aiSuggestion && (
-                              <div
-                                className="ai-suggestion-card"
-                                style={{
-                                  marginTop: 18,
-                                  padding: 14,
-                                  borderRadius: 10,
-                                  background: "rgba(0,212,255,0.08)",
-                                  border: "1px solid #00d4ff55",
-                                  color: "#dbe6ef",
-                                  boxShadow: "0 0 10px #00d4ff22",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    fontWeight: 600,
-                                    color: "#00d4ff",
-                                    marginBottom: 6,
-                                  }}
-                                >
-                                  AI Recommendation
-                                </div>
-                                <div
-                                  style={{ fontSize: "1.1em", marginBottom: 4 }}
-                                >
-                                  <b>Optimal Departure:</b>{" "}
-                                  {aiSuggestion.window || "N/A"}
-                                </div>
-                                <div
-                                  style={{
-                                    color: "#7fa2bd",
-                                    fontSize: "0.98em",
-                                  }}
-                                >
-                                  {aiSuggestion.rationale || ""}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <div className="premium-locked-container">
-                        <div className="premium-locked-blur" />
-                        <div className="premium-locked-content">
-                          <span className="premium-locked-icon">✨</span>
-                          <div className="premium-locked-title">
-                            Premium Insights
-                          </div>
-                          <div className="premium-locked-desc">
-                            Upgrade now to unlock real-time weather, traffic,
-                            and AI-powered route analytics!
-                          </div>
-                          <button
-                            className="btn-upgrade"
-                            onClick={() => navigate("/details")}
-                          >
-                            Upgrade Now
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {currentUser?.is_premium && (
-                  <div
-                    className="plan-card plus premium-card"
-                    ref={premiumCardRef}
-                  >
-                    <div className="premium-watermark">⚡</div>
-                    <div className="plan-header premium-heading">
-                      <span>✨</span>
-                      Premium Active
-                      <span>✨</span>
-                    </div>
-                    <p className="premium-desc">
-                      You're enjoying exclusive JeepRoute Plus features!
-                    </p>
-                    <div className="premium-feature-list">
-                      <div className="premium-feature">
-                        <span>🌦️</span>
-                        <span>Real-time weather insights</span>
-                      </div>
-                      <div className="premium-feature">
-                        <span>🚦</span>
-                        <span>Live traffic conditions</span>
-                      </div>
-                      <div className="premium-feature">
-                        <span>🤖</span>
-                        <span>AI-powered delay predictions</span>
-                      </div>
-                      <div className="premium-feature">
-                        <span>⏰</span>
-                        <span>Optimal departure time</span>
-                      </div>
-                      <div className="premium-feature">
-                        <span>📊</span>
-                        <span>Advanced route analytics</span>
-                      </div>
-                    </div>
-                    <div className="premium-thanks">
-                      Thank you for being a Plus member!
-                    </div>
+                {estimation?.loading && (
+                  <div className="plan-card free" style={{ alignItems: "center" }}>
+                    <Spinner size={52} color="#00d4ff" text="Calculating estimation..." />
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Show map only for town-to-town mode, or jeepney mode before planning */}
+            {/* Top Right: Map */}
             {(!useJeepneyMode || (useJeepneyMode && !showJeepneyStops)) && (
-              <div className="jeeproute-map">
+              <div className="grid-map">
                 <Mapbox3DMap 
                   estimation={useJeepneyMode ? null : estimation} 
                   selectedJeepneyRoute={useJeepneyMode ? selectedJeepneyRoute : null}
@@ -713,12 +762,202 @@ function Homescreen({ currentUser, setCurrentUser }) {
             )}
             {/* Show jeepney stops estimation after planning in jeepney mode */}
             {useJeepneyMode && showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
-              <JeepneyStopsEstimation 
-                key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
-                route={selectedJeepneyRoute} 
-                onBack={() => setShowJeepneyStops(false)}
-              />
+              <div className="grid-map">
+                <JeepneyStopsEstimation 
+                  key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
+                  route={selectedJeepneyRoute} 
+                  onBack={() => setShowJeepneyStops(false)}
+                />
+              </div>
             )}
+
+            {/* Bottom: Features Container */}
+            <div className="grid-features">
+              <div className="features-header">
+                Features
+                <button
+                  type="button"
+                  className="premium-info-toggle"
+                  aria-label={
+                    currentUser?.is_premium
+                      ? showPremiumInfo
+                        ? "Hide premium benefits"
+                        : "Show premium benefits"
+                      : showUpgradeInfo
+                        ? "Hide upgrade details"
+                        : "Show upgrade details"
+                  }
+                  aria-expanded={currentUser?.is_premium ? showPremiumInfo : showUpgradeInfo}
+                  onClick={() => {
+                    if (currentUser?.is_premium) {
+                      setShowPremiumInfo((prev) => !prev);
+                    } else {
+                      setShowUpgradeInfo((prev) => !prev);
+                    }
+                  }}
+                >
+                  ?
+                </button>
+              </div>
+              {currentUser?.is_premium && showPremiumInfo && (
+                <div
+                  className="premium-info-popover"
+                  role="dialog"
+                  aria-modal="false"
+                >
+                  <button
+                    type="button"
+                    className="premium-info-close"
+                    aria-label="Close premium info"
+                    onClick={() => setShowPremiumInfo(false)}
+                  >
+                    ×
+                  </button>
+                  <div className="plan-header premium-heading">
+                    <span>✨</span>
+                    Premium Active
+                    <span>✨</span>
+                  </div>
+                  <p className="premium-desc">
+                    You're enjoying exclusive JeepRoute Plus features!
+                  </p>
+                  <div className="premium-feature-list">
+                    <div className="premium-feature">
+                      <span>🌦️</span>
+                      <span>Real-time weather insights</span>
+                    </div>
+                    <div className="premium-feature">
+                      <span>🚦</span>
+                      <span>Live traffic conditions</span>
+                    </div>
+                    <div className="premium-feature">
+                      <span>🤖</span>
+                      <span>AI-powered delay predictions</span>
+                    </div>
+                    <div className="premium-feature">
+                      <span>⏰</span>
+                      <span>Optimal departure time</span>
+                    </div>
+                    <div className="premium-feature">
+                      <span>📊</span>
+                      <span>Advanced route analytics</span>
+                    </div>
+                  </div>
+                  <div className="premium-thanks">
+                    Thank you for being a Plus member!
+                  </div>
+                </div>
+              )}
+              {!currentUser?.is_premium && showUpgradeInfo && (
+                <div
+                  className="premium-info-popover upgrade-popover"
+                  role="dialog"
+                  aria-modal="false"
+                >
+                  <button
+                    type="button"
+                    className="premium-info-close"
+                    aria-label="Close upgrade info"
+                    onClick={() => setShowUpgradeInfo(false)}
+                  >
+                    ×
+                  </button>
+                  <div className="plan-header premium-heading">
+                    <span>🚀</span>
+                    Unlock JeepRoute Plus
+                  </div>
+                  <ul className="popover-list">
+                    <li>🌦️ Real-time weather + traffic signals</li>
+                    <li>🤖 AI-powered departure windows</li>
+                    <li>📊 Advanced route analytics & history</li>
+                  </ul>
+                  <button
+                    className="btn-upgrade"
+                    style={{ marginTop: 12, width: "100%" }}
+                    onClick={() => {
+                      setShowUpgradeInfo(false);
+                      navigate('/details');
+                    }}
+                  >
+                    View Plans
+                  </button>
+                </div>
+              )}
+              <div className="features-content">
+                {currentUser?.is_premium ? (
+                  <>
+                    <div className="features-grid-cards">
+                      {premiumFeatureCards.map((card) => (
+                        <button
+                          type="button"
+                          className={`feature-card${activeFeature === card.key ? " active" : ""}`}
+                          key={card.title}
+                          onClick={() => handleFeatureClick(card.key)}
+                          aria-pressed={activeFeature === card.key}
+                          disabled={!insightsReady}
+                        >
+                          <div className="feature-icon">{card.icon}</div>
+                          <div className="feature-body">
+                            <p className="feature-title">{card.title}</p>
+                            <p className="feature-status">{card.status}</p>
+                            <p className="feature-copy">{card.detail}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="feature-grid-shell">
+                      <div className="features-grid-cards free-tier">
+                        {freeFeatureCards.map((card) => (
+                          <div className="feature-card" key={card.key}>
+                            <div className="feature-body">
+                              <p className="feature-title">{card.title}</p>
+                              <p className="feature-status">{card.status}</p>
+                              <p className="feature-copy">{card.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="feature-footer-note">
+                      Tap the "?" icon to preview Plus upgrades.
+                    </div>
+                  </>
+                )}
+              </div>
+              {currentUser?.is_premium && renderFeaturePopover()}
+            </div>
+
+            {/* Bottom Right: Ask AI */}
+            <div className="grid-ask-ai">
+              <div className="ask-ai-header">Ask AI</div>
+              <div className="ask-ai-content">
+                {currentUser?.is_premium && estimation && !estimation.loading ? (
+                  <>
+                    <button
+                      className="btn-neon-fill"
+                      style={{ width: '100%', fontSize: 24, padding: '8px' }}
+                      onClick={handleActivateAIMode}
+                      disabled={aiLoading}
+                    >
+                      {aiLoading ? '⏳' : '🤖'}
+                    </button>
+                    {aiSuggestion && (
+                      <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text)', textAlign: 'center' }}>
+                        <strong>{aiSuggestion.window || 'N/A'}</strong>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 10 }}>
+                    <span style={{ fontSize: '2.5rem' }}>🤖</span>
+                    <p style={{ marginTop: 4 }}>Premium</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -892,7 +1131,7 @@ function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
       ref={mapContainer}
       style={{
         width: "100%",
-        height: "550px",
+        height: "400px",
         borderRadius: 12,
         overflow: "hidden",
         background: "#eaf6ff",
