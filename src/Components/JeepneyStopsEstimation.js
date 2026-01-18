@@ -19,7 +19,7 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
       }
       try {
         // Call backend endpoint for ETA calculation
-        const res = await authFetch('/api/mapbox-eta', {
+        const res = await authFetch('/api/mapbox-eta/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
