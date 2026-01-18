@@ -2,6 +2,18 @@
 // Usage: import authFetch from '../utils/authFetch';
 
 export default async function authFetch(url, options = {}, navigate) {
+  // Get current user token from localStorage
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  const token = currentUser?.token;
+  
+  // Add Authorization header if token exists
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
+    };
+  }
+  
   const resp = await fetch(url, options);
   if (resp.status === 401) {
     // Clear user and token from localStorage
