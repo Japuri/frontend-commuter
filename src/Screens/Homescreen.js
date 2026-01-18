@@ -69,6 +69,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [endTown, setEndTown] = useState(
     () => sessionStorage.getItem("endTown") || ""
   );
+
+  // Clear AI suggestion whenever the selected towns change
+  useEffect(() => {
+    setAiSuggestion(null);
+    setAiError("");
+  }, [startTown, endTown]);
   // Jeepney route selection state
   const [selectedJeepneyRoute, setSelectedJeepneyRoute] = useState(null);
   const [useJeepneyMode, setUseJeepneyMode] = useState(true);
@@ -939,8 +945,11 @@ function Homescreen({ currentUser, setCurrentUser }) {
                     <button
                       className="btn-neon-fill"
                       style={{ width: '100%', fontSize: 24, padding: '8px' }}
-                      onClick={handleActivateAIMode}
-                      disabled={aiLoading}
+                      onClick={() => {
+                        if (!estimation || estimation.loading) return;
+                        setActiveFeature('ai');
+                      }}
+                      disabled={aiLoading || !estimation || estimation.loading}
                     >
                       {aiLoading ? '⏳' : '🤖'}
                     </button>
@@ -951,10 +960,28 @@ function Homescreen({ currentUser, setCurrentUser }) {
                     )}
                   </>
                 ) : (
-                  <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 10 }}>
-                    <span style={{ fontSize: '2.5rem' }}>🤖</span>
-                    <p style={{ marginTop: 4 }}>Premium</p>
-                  </div>
+                  <>
+                    {currentUser && !currentUser.is_premium ? (
+                      <>
+                        <button
+                          className="btn-neon-fill"
+                          style={{ width: '100%', fontSize: 24, padding: '8px' }}
+                          onClick={() => navigate('/details')}
+                          disabled={aiLoading}
+                        >
+                          🤖
+                        </button>
+                        <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text)', textAlign: 'center' }}>
+                          <strong>Unlock AI guidance with JeepRoute Plus</strong>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 10 }}>
+                        <span style={{ fontSize: '2.5rem' }}>🤖</span>
+                        <p style={{ marginTop: 4 }}>Premium</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
