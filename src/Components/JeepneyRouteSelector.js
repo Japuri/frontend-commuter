@@ -18,92 +18,66 @@ export default function JeepneyRouteSelector({ onRouteSelect, selectedRoute }) {
   };
 
   return (
-    <div style={{ marginBottom: 16, maxHeight: 'calc(83vh - 300px)', overflowY: 'auto', paddingRight: 4 }}>
-      <div className="plan-header" style={{ marginBottom: 12 }}>Select Jeepney Route</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div
+      style={{
+        marginBottom: 16,
+        maxHeight: "calc(73vh - 300px)",
+        overflowY: "auto",
+        paddingRight: 4,
+      }}
+    >
+      <div className="plan-header" style={{ marginBottom: 12 }}>
+        Select Jeepney Route
+      </div>
+      <div className="route-card-stack">
         {JEEPNEY_ROUTE_COLORS.map((route) => {
           const isExpanded = expandedRoute === route.color;
           const isSelected = selectedRoute?.color === route.color;
           return (
             <div
               key={route.color}
-              style={{
-                border: `2px solid ${isSelected ? route.hex : '#2a3441'}`,
-                borderRadius: 10,
-                padding: 10,
-                background: isSelected 
-                  ? `linear-gradient(135deg, ${route.hex}15, ${route.hex}08)`
-                  : 'rgba(30, 38, 49, 0.5)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: isSelected ? `0 0 8px ${route.hex}40` : '0 1px 2px #0001',
-                marginBottom: 2,
-              }}
+              className={`route-card${isSelected ? " selected" : ""}`}
               onClick={() => handleRouteClick(route)}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="route-card-header">
                 <span
+                  className="route-chip"
                   style={{
-                    display: 'inline-block',
-                    width: 18,
-                    height: 18,
-                    borderRadius: 5,
                     background: route.hex,
-                    border: route.color === 'White' ? '1px solid #ccc' : 'none',
-                    boxShadow: '0 2px 4px #0003',
-                    flexShrink: 0,
+                    borderColor:
+                      route.color === "White" ? "#d0d6e4" : "transparent",
                   }}
                 />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: '#e8f5ff', marginBottom: 1 }}>
-                    {route.color} Route
-                  </div>
-                  <div style={{ fontSize: 12, color: '#9ca9b8' }}>
-                    {route.route}
-                  </div>
+                  <p className="route-card-title">{route.color} Route</p>
+                  <p className="route-card-subtext">{route.route}</p>
                 </div>
-                <span style={{ color: '#7f94a8', fontSize: 16 }}>
-                  {isExpanded ? '▼' : '▶'}
+                <span className="route-card-arrow" aria-hidden="true">
+                  {isExpanded ? "▼" : "▶"}
                 </span>
               </div>
 
               {isExpanded && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    paddingTop: 8,
-                    borderTop: '1px solid rgba(255,255,255,0.08)',
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: '#b4c1ce', marginBottom: 6 }}>
+                <div className="route-card-details">
+                  <p className="route-card-subtext" style={{ marginBottom: 6 }}>
                     <strong>Key Places:</strong>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+                  </p>
+                  <div className="route-chip-list">
                     {route.keyPlaces.map((place, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          background: 'rgba(0, 212, 255, 0.1)',
-                          padding: '3px 8px',
-                          borderRadius: 5,
-                          fontSize: 11,
-                          color: '#c8e0f0',
-                          border: '1px solid rgba(0, 212, 255, 0.15)',
-                        }}
-                      >
+                      <span className="route-chip-tag" key={idx}>
                         {place}
                       </span>
                     ))}
                   </div>
                   <button
                     className="btn-neon-fill"
-                    style={{ width: '100%', padding: '6px 10px', fontSize: 13 }}
+                    style={{ width: "100%", padding: "10px 16px", fontSize: 14 }}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSelectRoute(route);
                     }}
                   >
-                    {isSelected ? '✓ Selected' : 'Select This Route'}
+                    {isSelected ? "✓ Selected" : "Select This Route"}
                   </button>
                 </div>
               )}
