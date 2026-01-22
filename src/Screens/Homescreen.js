@@ -28,45 +28,53 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
 
-  // --- Calculate totals for planned trips using real data ---
-  // Helper to calculate distance between two lat/lng points (Haversine formula)
-  function haversineDistance(lat1, lon1, lat2, lon2) {
-    const toRad = (v) => (v * Math.PI) / 180;
-    const R = 6371; // km
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
+  // --- Use Mapbox Directions API for real trip estimation ---
+  const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+  const [tripStats, setTripStats] = useState([]); // [{distance, duration, cost, stopEtas: [{name, eta}]}]
 
-  // Calculate total distance for all trips (sum of all stops in each route)
-  let totalDistance = 0;
-  let totalTime = 0;
-  let totalCost = 0;
-  plannedTrips.forEach((trip) => {
-    let tripDistance = 0;
-    let tripTime = 0;
-    let tripCost = 0;
-    if (trip.stops && trip.stops.length > 1) {
-      for (let i = 1; i < trip.stops.length; i++) {
-        const prev = trip.stops[i - 1];
-        const curr = trip.stops[i];
-        tripDistance += haversineDistance(prev.lat, prev.lng, curr.lat, curr.lng);
-      }
-      // Estimate time: assume 25 km/h average speed, add 2 min per stop
-      tripTime = Math.round((tripDistance / 25) * 60 + trip.stops.length * 2);
-      // Estimate cost: base fare 12 PHP + 2 PHP per km (rounded up)
-      tripCost = 12 + Math.ceil(tripDistance * 2);
+  useEffect(() => {
+    async function fetchAllTripStats() {
+      const stats = await Promise.all(
+        plannedTrips.map(async (trip) => {
+          if (!trip.stops || trip.stops.length < 2) return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
+          // Build coordinates string for Mapbox API
+          const coords = trip.stops.map(s => `${s.lng},${s.lat}`).join(';');
+          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+          try {
+            const res = await fetch(url);
+            const data = await res.json();
+            const route = data.routes?.[0];
+            if (route && data.waypoints) {
+              // Mapbox returns distance in meters, duration in seconds
+              const distanceKm = route.distance / 1000;
+              const durationMin = Math.round(route.duration / 60);
+              const cost = 12 + Math.ceil(distanceKm * 2);
+              // Calculate ETA for each stop
+              let stopEtas = [];
+              let cumulativeSec = 0;
+              if (route.legs && route.legs.length === trip.stops.length - 1) {
+                stopEtas.push({ name: trip.stops[0].name, eta: 0 });
+                for (let i = 0; i < route.legs.length; i++) {
+                  cumulativeSec += route.legs[i].duration;
+                  stopEtas.push({ name: trip.stops[i + 1].name, eta: Math.round(cumulativeSec / 60) });
+                }
+              }
+              return { distance: distanceKm, duration: durationMin, cost, stopEtas };
+            }
+          } catch {}
+          return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
+        })
+      );
+      setTripStats(stats);
     }
-    totalDistance += tripDistance;
-    totalTime += tripTime;
-    totalCost += tripCost;
-  });
-  totalDistance = totalDistance.toFixed(2);
+    if (plannedTrips.length > 0) fetchAllTripStats();
+    else setTripStats([]);
+  }, [plannedTrips]);
+
+  // Calculate totals from tripStats
+  const totalDistance = tripStats.reduce((sum, t) => sum + t.distance, 0).toFixed(2);
+  const totalTime = tripStats.reduce((sum, t) => sum + t.duration, 0);
+  const totalCost = tripStats.reduce((sum, t) => sum + t.cost, 0);
 
   // Add current selected route to planned trips
   const handleAddTrip = () => {
@@ -764,21 +772,36 @@ function Homescreen({ currentUser, setCurrentUser }) {
                         + Add Jeepney Trip
                       </button>
                       
-                      {/* Trip summary */}
+                      {/* Trip summary and stop-by-stop ETAs for all planned trips */}
                       {plannedTrips.length > 0 && (
                         <div style={{
                           background: '#eaf6ff',
                           borderRadius: 10,
-                          padding: '12px 14px',
-                          marginBottom: 12,
+                          padding: '16px 18px',
+                          marginBottom: 18,
                           boxShadow: '0 2px 8px #e0e8f7',
                         }}>
-                          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Trip Summary</div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+                          <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>Trip Summary</div>
+                          <div style={{ display: 'flex', gap: 18, fontSize: 15, marginBottom: 12 }}>
                             <div><strong>Total Distance:</strong> {totalDistance} km</div>
                             <div><strong>Total Time:</strong> {totalTime} min</div>
                             <div><strong>Total Cost:</strong> ₱{totalCost}</div>
                           </div>
+                          {/* Show stop-by-stop ETAs for each trip */}
+                          {plannedTrips.map((trip, idx) => (
+                            <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px' }}>
+                              <div style={{ fontWeight: 600, color: trip.hex, fontSize: 15, marginBottom: 4 }}>{trip.color} Route: {trip.route}</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {tripStats[idx]?.stopEtas?.map((stop, sidx) => (
+                                  <div key={sidx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <span style={{ fontWeight: 600, color: trip.hex, minWidth: 60 }}>{sidx + 1}{['st','nd','rd'][sidx] || 'th'} stop</span>
+                                    <span style={{ flex: 1, color: '#2a3441', fontWeight: 500 }}>{stop.name}</span>
+                                    <span style={{ color: '#7f94a8', fontSize: 13 }}>ETA: {stop.eta} min</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -803,21 +826,16 @@ function Homescreen({ currentUser, setCurrentUser }) {
                       />
                     </div>
                   )}
-                  <div className="jeeproute-actions-row">
-                    <button
-                      className="btn-neon-fill"
-                      disabled={useJeepneyMode ? !selectedJeepneyRoute || !selectedJeepneyRoute.stops || selectedJeepneyRoute.stops.length < 2 : (!startTown || !endTown || startTown === endTown)}
-                      onClick={() => {
-                        if (!currentUser) {
-                          navigate("/signin");
-                          return;
-                        }
-                        if (useJeepneyMode) {
-                          // Only allow if route has stops
-                          if (selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2) {
-                            setShowJeepneyStops(true);
+                  {!useJeepneyMode && (
+                    <div className="jeeproute-actions-row">
+                      <button
+                        className="btn-neon-fill"
+                        disabled={!startTown || !endTown || startTown === endTown}
+                        onClick={() => {
+                          if (!currentUser) {
+                            navigate("/signin");
+                            return;
                           }
-                        } else {
                           // Only log if user is authenticated
                           if (currentUser?.id) {
                             let townName = undefined;
@@ -841,12 +859,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
                             } catch {}
                           }
                           setRouteRequested(true);
-                        }
-                      }}
-                    >
-                      Plan Route
-                    </button>
-                  </div>
+                        }}
+                      >
+                        Plan Route
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {estimation?.loading && (
                   <div className="plan-card free" style={{ alignItems: "center" }}>
@@ -856,13 +874,13 @@ function Homescreen({ currentUser, setCurrentUser }) {
               </div>
             </div>
 
-            {/* Top Right: Map */}
-            {(!useJeepneyMode || (useJeepneyMode && !showJeepneyStops)) && (
+            {/* Top Right: Map (only show in Town to Town mode) */}
+            {!useJeepneyMode && (
               <div className="grid-map">
                 <Mapbox3DMap 
-                  estimation={useJeepneyMode ? null : estimation} 
-                  selectedJeepneyRoute={useJeepneyMode ? selectedJeepneyRoute : null}
-                  key={String(useJeepneyMode) + '-' + String(startTown) + '-' + String(endTown) + '-' + String(routeRequested) + '-' + (selectedJeepneyRoute?.color || '')}
+                  estimation={estimation} 
+                  selectedJeepneyRoute={null}
+                  key={String(useJeepneyMode) + '-' + String(startTown) + '-' + String(endTown) + '-' + String(routeRequested)}
                 />
               </div>
             )}
