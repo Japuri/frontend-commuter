@@ -1874,6 +1874,97 @@ select {
 }
 
 /* Profile Dashboard */
+/* Dashboard Top Bar */
+.dashboard-shell {
+  min-height: 100vh;
+}
+
+.dashboard-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.dashboard-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.dashboard-logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-icon {
+  font-size: 2rem;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1b63d1;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.welcome-msg {
+  color: #374151;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .dashboard-top-bar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .logo-text {
+    font-size: 1.2rem;
+  }
+  
+  .logo-icon {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-nav {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .welcome-msg {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-nav button {
+    flex: 1;
+    min-width: 100px;
+  }
+}
+
 /* Lock profile view to viewport height on desktop */
 .profile-clean {
   background: radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.06), transparent 30%),

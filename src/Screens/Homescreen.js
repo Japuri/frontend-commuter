@@ -20,10 +20,66 @@ import "mapbox-gl/dist/mapbox-gl.css";
 // import { JEEPNEY_ROUTE_COLORS } from '../data/jeepney_routes';
 
 function Homescreen({ currentUser, setCurrentUser }) {
+  // Multi-trip planning state
+  const [plannedTrips, setPlannedTrips] = useState([]); // Array of selected routes
+  const [currentRoute, setCurrentRoute] = useState(null); // Route being selected
   // AI Suggestion state for premium users
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+
+  // --- Calculate totals for planned trips using real data ---
+  // Helper to calculate distance between two lat/lng points (Haversine formula)
+  function haversineDistance(lat1, lon1, lat2, lon2) {
+    const toRad = (v) => (v * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  // Calculate total distance for all trips (sum of all stops in each route)
+  let totalDistance = 0;
+  let totalTime = 0;
+  let totalCost = 0;
+  plannedTrips.forEach((trip) => {
+    let tripDistance = 0;
+    let tripTime = 0;
+    let tripCost = 0;
+    if (trip.stops && trip.stops.length > 1) {
+      for (let i = 1; i < trip.stops.length; i++) {
+        const prev = trip.stops[i - 1];
+        const curr = trip.stops[i];
+        tripDistance += haversineDistance(prev.lat, prev.lng, curr.lat, curr.lng);
+      }
+      // Estimate time: assume 25 km/h average speed, add 2 min per stop
+      tripTime = Math.round((tripDistance / 25) * 60 + trip.stops.length * 2);
+      // Estimate cost: base fare 12 PHP + 2 PHP per km (rounded up)
+      tripCost = 12 + Math.ceil(tripDistance * 2);
+    }
+    totalDistance += tripDistance;
+    totalTime += tripTime;
+    totalCost += tripCost;
+  });
+  totalDistance = totalDistance.toFixed(2);
+
+  // Add current selected route to planned trips
+  const handleAddTrip = () => {
+    if (currentRoute) {
+      setPlannedTrips([...plannedTrips, currentRoute]);
+      setCurrentRoute(null);
+    }
+  };
+
+  // Remove a trip from planned trips
+  const handleRemoveTrip = (idx) => {
+    setPlannedTrips(plannedTrips.filter((_, i) => i !== idx));
+  };
   const handleActivateAIMode = async () => {
     if (!estimation || !currentUser?.is_premium) return;
     setAiLoading(true);
@@ -597,12 +653,14 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
   return (
     <>
-      {/* <JeepneyLegend /> removed as per request */}
       <CongratsModal />
-      <div className="jeeproute-page">
-        <div className="jeeproute-navbar">
-          <div className="brand">JeepRoute</div>
-          <div className="header-actions">
+      <div className="dashboard-shell">
+        <div className="dashboard-top-bar">
+          <div className="dashboard-logo">
+            <span className="logo-icon">🚍</span>
+            <span className="logo-text">JeepRoute</span>
+          </div>
+          <div className="dashboard-nav">
             {!loggedIn && (
               <>
                 <button
@@ -674,13 +732,55 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
                   {useJeepneyMode ? (
                     <div className="jeeproute-select-block">
+                      {/* Multi-leg Jeepney Trip Planner */}
+                      {plannedTrips.length > 0 && (
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 14 }}>Planned Trips:</div>
+                          {plannedTrips.map((trip, idx) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, background: '#f8f9fa', borderRadius: 8, padding: '6px 10px' }}>
+                              <span style={{ color: trip.hex, fontWeight: 500, fontSize: 13 }}>{trip.color} Route</span>
+                              <span style={{ flex: 1, color: '#2a3441', fontSize: 12 }}>{trip.route}</span>
+                              <button onClick={() => handleRemoveTrip(idx)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 16 }}>✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
                       <JeepneyRouteSelector
                         onRouteSelect={(route) => {
+                          setCurrentRoute(route);
                           setSelectedJeepneyRoute(route);
                           setShowJeepneyStops(false); // Reset stops view on new selection
                         }}
-                        selectedRoute={selectedJeepneyRoute}
+                        selectedRoute={currentRoute || selectedJeepneyRoute}
                       />
+                      
+                      <button
+                        className="btn-neon-fill"
+                        style={{ width: '100%', marginTop: 12, marginBottom: 12, fontSize: 14 }}
+                        onClick={handleAddTrip}
+                        disabled={!currentRoute}
+                      >
+                        + Add Jeepney Trip
+                      </button>
+                      
+                      {/* Trip summary */}
+                      {plannedTrips.length > 0 && (
+                        <div style={{
+                          background: '#eaf6ff',
+                          borderRadius: 10,
+                          padding: '12px 14px',
+                          marginBottom: 12,
+                          boxShadow: '0 2px 8px #e0e8f7',
+                        }}>
+                          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Trip Summary</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+                            <div><strong>Total Distance:</strong> {totalDistance} km</div>
+                            <div><strong>Total Time:</strong> {totalTime} min</div>
+                            <div><strong>Total Cost:</strong> ₱{totalCost}</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="jeeproute-select-block">
