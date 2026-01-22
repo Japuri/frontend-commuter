@@ -772,38 +772,6 @@ function Homescreen({ currentUser, setCurrentUser }) {
                         + Add Jeepney Trip
                       </button>
                       
-                      {/* Trip summary and stop-by-stop ETAs for all planned trips */}
-                      {plannedTrips.length > 0 && (
-                        <div style={{
-                          background: '#eaf6ff',
-                          borderRadius: 10,
-                          padding: '16px 18px',
-                          marginBottom: 18,
-                          boxShadow: '0 2px 8px #e0e8f7',
-                        }}>
-                          <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>Trip Summary</div>
-                          <div style={{ display: 'flex', gap: 18, fontSize: 15, marginBottom: 12 }}>
-                            <div><strong>Total Distance:</strong> {totalDistance} km</div>
-                            <div><strong>Total Time:</strong> {totalTime} min</div>
-                            <div><strong>Total Cost:</strong> ₱{totalCost}</div>
-                          </div>
-                          {/* Show stop-by-stop ETAs for each trip */}
-                          {plannedTrips.map((trip, idx) => (
-                            <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px' }}>
-                              <div style={{ fontWeight: 600, color: trip.hex, fontSize: 15, marginBottom: 4 }}>{trip.color} Route: {trip.route}</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                {tripStats[idx]?.stopEtas?.map((stop, sidx) => (
-                                  <div key={sidx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <span style={{ fontWeight: 600, color: trip.hex, minWidth: 60 }}>{sidx + 1}{['st','nd','rd'][sidx] || 'th'} stop</span>
-                                    <span style={{ flex: 1, color: '#2a3441', fontWeight: 500 }}>{stop.name}</span>
-                                    <span style={{ color: '#7f94a8', fontSize: 13 }}>ETA: {stop.eta} min</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="jeeproute-select-block">
@@ -884,14 +852,48 @@ function Homescreen({ currentUser, setCurrentUser }) {
                 />
               </div>
             )}
-            {/* Show jeepney stops estimation after planning in jeepney mode */}
-            {useJeepneyMode && showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
+            {/* Show trip summary in grid-map area for Jeepney Routes mode */}
+            {useJeepneyMode && (
               <div className="grid-map">
-                <JeepneyStopsEstimation 
-                  key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
-                  route={selectedJeepneyRoute} 
-                  onBack={() => setShowJeepneyStops(false)}
-                />
+                {plannedTrips.length > 0 && (
+                  <div style={{
+                    background: '#eaf6ff',
+                    borderRadius: 10,
+                    padding: '16px 18px',
+                    marginBottom: 18,
+                    boxShadow: '0 2px 8px #e0e8f7',
+                  }}>
+                    <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>Trip Summary</div>
+                    <div style={{ display: 'flex', gap: 18, fontSize: 15, marginBottom: 12 }}>
+                      <div><strong>Total Distance:</strong> {totalDistance} km</div>
+                      <div><strong>Total Time:</strong> {totalTime} min</div>
+                      <div><strong>Total Cost:</strong> ₱{totalCost}</div>
+                    </div>
+                    {/* Show stop-by-stop ETAs for each trip */}
+                    {plannedTrips.map((trip, idx) => (
+                      <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px' }}>
+                        <div style={{ fontWeight: 600, color: trip.hex, fontSize: 15, marginBottom: 4 }}>{trip.color} Route: {trip.route}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {tripStats[idx]?.stopEtas?.map((stop, sidx) => (
+                            <div key={sidx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <span style={{ fontWeight: 600, color: trip.hex, minWidth: 60 }}>{sidx + 1}{['st','nd','rd'][sidx] || 'th'} stop</span>
+                              <span style={{ flex: 1, color: '#2a3441', fontWeight: 500 }}>{stop.name}</span>
+                              <span style={{ color: '#7f94a8', fontSize: 13 }}>ETA: {stop.eta} min</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Show jeepney stops estimation after planning in jeepney mode */}
+                {showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
+                  <JeepneyStopsEstimation 
+                    key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
+                    route={selectedJeepneyRoute} 
+                    onBack={() => setShowJeepneyStops(false)}
+                  />
+                )}
               </div>
             )}
 
