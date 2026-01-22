@@ -174,21 +174,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
       // Log trip to backend when user selects an end town
       if (currentUser?.id && currentUser?.token && startTown && val) {
         const endTownData = getTownById(val);
-        console.log('Logging trip:', { userId: currentUser.id, startTown, endTown: val });
-        const result = await logTrip(currentUser.id, currentUser.token, {
+        await logTrip(currentUser.id, currentUser.token, {
           town_id: val,
           town_name: endTownData?.name || val,
           start_town: startTown,
           distance_km: 0,
           estimated_minutes: 0
-        });
-        console.log('Trip logged successfully:', result);
-      } else {
-        console.log('Skipping trip log - missing data:', { 
-          hasUser: !!currentUser?.id, 
-          hasToken: !!currentUser?.token, 
-          hasStartTown: !!startTown, 
-          hasEndTown: !!val 
         });
       }
     } catch (e) {
