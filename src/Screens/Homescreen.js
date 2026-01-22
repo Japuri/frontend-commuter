@@ -1158,7 +1158,7 @@ function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
       ref={mapContainer}
       style={{
         width: "100%",
-        height: "400px",
+        height: "100%",
         borderRadius: 12,
         overflow: "hidden",
         background: "#eaf6ff",
