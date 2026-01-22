@@ -702,6 +702,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   onClick={() => {
                     setCurrentUser(null);
                     localStorage.removeItem("currentUser");
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
                     navigate("/");
                   }}
                 >
