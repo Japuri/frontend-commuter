@@ -20,10 +20,74 @@ import "mapbox-gl/dist/mapbox-gl.css";
 // import { JEEPNEY_ROUTE_COLORS } from '../data/jeepney_routes';
 
 function Homescreen({ currentUser, setCurrentUser }) {
+  // Multi-trip planning state
+  const [plannedTrips, setPlannedTrips] = useState([]); // Array of selected routes
+  const [currentRoute, setCurrentRoute] = useState(null); // Route being selected
   // AI Suggestion state for premium users
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+
+  // --- Use Mapbox Directions API for real trip estimation ---
+  const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+  const [tripStats, setTripStats] = useState([]); // [{distance, duration, cost, stopEtas: [{name, eta}]}]
+
+  useEffect(() => {
+    async function fetchAllTripStats() {
+      const stats = await Promise.all(
+        plannedTrips.map(async (trip) => {
+          if (!trip.stops || trip.stops.length < 2) return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
+          // Build coordinates string for Mapbox API
+          const coords = trip.stops.map(s => `${s.lng},${s.lat}`).join(';');
+          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+          try {
+            const res = await fetch(url);
+            const data = await res.json();
+            const route = data.routes?.[0];
+            if (route && data.waypoints) {
+              // Mapbox returns distance in meters, duration in seconds
+              const distanceKm = route.distance / 1000;
+              const durationMin = Math.round(route.duration / 60);
+              const cost = 12 + Math.ceil(distanceKm * 2);
+              // Calculate ETA for each stop
+              let stopEtas = [];
+              let cumulativeSec = 0;
+              if (route.legs && route.legs.length === trip.stops.length - 1) {
+                stopEtas.push({ name: trip.stops[0].name, eta: 0 });
+                for (let i = 0; i < route.legs.length; i++) {
+                  cumulativeSec += route.legs[i].duration;
+                  stopEtas.push({ name: trip.stops[i + 1].name, eta: Math.round(cumulativeSec / 60) });
+                }
+              }
+              return { distance: distanceKm, duration: durationMin, cost, stopEtas };
+            }
+          } catch {}
+          return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
+        })
+      );
+      setTripStats(stats);
+    }
+    if (plannedTrips.length > 0) fetchAllTripStats();
+    else setTripStats([]);
+  }, [plannedTrips]);
+
+  // Calculate totals from tripStats
+  const totalDistance = tripStats.reduce((sum, t) => sum + t.distance, 0).toFixed(2);
+  const totalTime = tripStats.reduce((sum, t) => sum + t.duration, 0);
+  const totalCost = tripStats.reduce((sum, t) => sum + t.cost, 0);
+
+  // Add current selected route to planned trips
+  const handleAddTrip = () => {
+    if (currentRoute) {
+      setPlannedTrips([...plannedTrips, currentRoute]);
+      setCurrentRoute(null);
+    }
+  };
+
+  // Remove a trip from planned trips
+  const handleRemoveTrip = (idx) => {
+    setPlannedTrips(plannedTrips.filter((_, i) => i !== idx));
+  };
   const handleActivateAIMode = async () => {
     if (!estimation || !currentUser?.is_premium) return;
     setAiLoading(true);
@@ -110,21 +174,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
       // Log trip to backend when user selects an end town
       if (currentUser?.id && currentUser?.token && startTown && val) {
         const endTownData = getTownById(val);
-        console.log('Logging trip:', { userId: currentUser.id, startTown, endTown: val });
-        const result = await logTrip(currentUser.id, currentUser.token, {
+        await logTrip(currentUser.id, currentUser.token, {
           town_id: val,
           town_name: endTownData?.name || val,
           start_town: startTown,
           distance_km: 0,
           estimated_minutes: 0
-        });
-        console.log('Trip logged successfully:', result);
-      } else {
-        console.log('Skipping trip log - missing data:', { 
-          hasUser: !!currentUser?.id, 
-          hasToken: !!currentUser?.token, 
-          hasStartTown: !!startTown, 
-          hasEndTown: !!val 
         });
       }
     } catch (e) {
@@ -599,7 +654,6 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
   return (
     <>
-      {/* <JeepneyLegend /> removed as per request */}
       <CongratsModal />
       <div className="jeeproute-page dashboard-shell">
         <div className="jeeproute-navbar">
@@ -683,13 +737,38 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
                   {useJeepneyMode ? (
                     <div className="jeeproute-select-block">
+                      {/* Multi-leg Jeepney Trip Planner */}
+                      {plannedTrips.length > 0 && (
+                        <div style={{ marginBottom: 16 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 14 }}>Planned Trips:</div>
+                          {plannedTrips.map((trip, idx) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, background: '#f8f9fa', borderRadius: 8, padding: '6px 10px' }}>
+                              <span style={{ color: trip.hex, fontWeight: 500, fontSize: 13 }}>{trip.color} Route</span>
+                              <span style={{ flex: 1, color: '#2a3441', fontSize: 12 }}>{trip.route}</span>
+                              <button onClick={() => handleRemoveTrip(idx)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 16 }}>✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
                       <JeepneyRouteSelector
                         onRouteSelect={(route) => {
+                          setCurrentRoute(route);
                           setSelectedJeepneyRoute(route);
                           setShowJeepneyStops(false); // Reset stops view on new selection
                         }}
-                        selectedRoute={selectedJeepneyRoute}
+                        selectedRoute={currentRoute || selectedJeepneyRoute}
                       />
+                      
+                      <button
+                        className="btn-neon-fill"
+                        style={{ width: '100%', marginTop: 12, marginBottom: 12, fontSize: 14 }}
+                        onClick={handleAddTrip}
+                        disabled={!currentRoute}
+                      >
+                        + Add Jeepney Trip
+                      </button>
+                      
                     </div>
                   ) : (
                     <div className="jeeproute-select-block">
@@ -712,21 +791,16 @@ function Homescreen({ currentUser, setCurrentUser }) {
                       />
                     </div>
                   )}
-                  <div className="jeeproute-actions-row">
-                    <button
-                      className="btn-neon-fill"
-                      disabled={useJeepneyMode ? !selectedJeepneyRoute || !selectedJeepneyRoute.stops || selectedJeepneyRoute.stops.length < 2 : (!startTown || !endTown || startTown === endTown)}
-                      onClick={() => {
-                        if (!currentUser) {
-                          navigate("/signin");
-                          return;
-                        }
-                        if (useJeepneyMode) {
-                          // Only allow if route has stops
-                          if (selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2) {
-                            setShowJeepneyStops(true);
+                  {!useJeepneyMode && (
+                    <div className="jeeproute-actions-row">
+                      <button
+                        className="btn-neon-fill"
+                        disabled={!startTown || !endTown || startTown === endTown}
+                        onClick={() => {
+                          if (!currentUser) {
+                            navigate("/signin");
+                            return;
                           }
-                        } else {
                           // Only log if user is authenticated
                           if (currentUser?.id) {
                             let townName = undefined;
@@ -750,12 +824,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
                             } catch {}
                           }
                           setRouteRequested(true);
-                        }
-                      }}
-                    >
-                      Plan Route
-                    </button>
-                  </div>
+                        }}
+                      >
+                        Plan Route
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {estimation?.loading && (
                   <div className="plan-card free" style={{ alignItems: "center" }}>
@@ -765,24 +839,58 @@ function Homescreen({ currentUser, setCurrentUser }) {
               </div>
             </div>
 
-            {/* Top Right: Map */}
-            {(!useJeepneyMode || (useJeepneyMode && !showJeepneyStops)) && (
+            {/* Top Right: Map (only show in Town to Town mode) */}
+            {!useJeepneyMode && (
               <div className="grid-map">
                 <Mapbox3DMap 
-                  estimation={useJeepneyMode ? null : estimation} 
-                  selectedJeepneyRoute={useJeepneyMode ? selectedJeepneyRoute : null}
-                  key={String(useJeepneyMode) + '-' + String(startTown) + '-' + String(endTown) + '-' + String(routeRequested) + '-' + (selectedJeepneyRoute?.color || '')}
+                  estimation={estimation} 
+                  selectedJeepneyRoute={null}
+                  key={String(useJeepneyMode) + '-' + String(startTown) + '-' + String(endTown) + '-' + String(routeRequested)}
                 />
               </div>
             )}
-            {/* Show jeepney stops estimation after planning in jeepney mode */}
-            {useJeepneyMode && showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
+            {/* Show trip summary in grid-map area for Jeepney Routes mode */}
+            {useJeepneyMode && (
               <div className="grid-map">
-                <JeepneyStopsEstimation 
-                  key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
-                  route={selectedJeepneyRoute} 
-                  onBack={() => setShowJeepneyStops(false)}
-                />
+                {plannedTrips.length > 0 && (
+                  <div style={{
+                    background: '#eaf6ff',
+                    borderRadius: 10,
+                    padding: '16px 18px',
+                    marginBottom: 18,
+                    boxShadow: '0 2px 8px #e0e8f7',
+                  }}>
+                    <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>Trip Summary</div>
+                    <div style={{ display: 'flex', gap: 18, fontSize: 15, marginBottom: 12 }}>
+                      <div><strong>Total Distance:</strong> {totalDistance} km</div>
+                      <div><strong>Total Time:</strong> {totalTime} min</div>
+                      <div><strong>Total Cost:</strong> ₱{totalCost}</div>
+                    </div>
+                    {/* Show stop-by-stop ETAs for each trip */}
+                    {plannedTrips.map((trip, idx) => (
+                      <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px' }}>
+                        <div style={{ fontWeight: 600, color: trip.hex, fontSize: 15, marginBottom: 4 }}>{trip.color} Route: {trip.route}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {tripStats[idx]?.stopEtas?.map((stop, sidx) => (
+                            <div key={sidx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <span style={{ fontWeight: 600, color: trip.hex, minWidth: 60 }}>{sidx + 1}{['st','nd','rd'][sidx] || 'th'} stop</span>
+                              <span style={{ flex: 1, color: '#2a3441', fontWeight: 500 }}>{stop.name}</span>
+                              <span style={{ color: '#7f94a8', fontSize: 13 }}>ETA: {stop.eta} min</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Show jeepney stops estimation after planning in jeepney mode */}
+                {showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
+                  <JeepneyStopsEstimation 
+                    key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
+                    route={selectedJeepneyRoute} 
+                    onBack={() => setShowJeepneyStops(false)}
+                  />
+                )}
               </div>
             )}
 
@@ -1168,7 +1276,7 @@ function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
       ref={mapContainer}
       style={{
         width: "100%",
-        height: "400px",
+        height: "100%",
         borderRadius: 12,
         overflow: "hidden",
         background: "#eaf6ff",

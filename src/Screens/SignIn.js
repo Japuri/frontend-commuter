@@ -35,7 +35,13 @@ function SignIn({ onAuth }) {
       });
       const data = await res.json();
       if (res.ok) {
-        onAuth(data);
+        // Store JWT tokens in localStorage
+        if (data.token) localStorage.setItem('accessToken', data.token);
+        if (data.refresh) localStorage.setItem('refreshToken', data.refresh);
+        // Persist currentUser in localStorage for authFetch
+        const userObj = { ...data.user, token: data.token, refresh: data.refresh };
+        localStorage.setItem('currentUser', JSON.stringify(userObj));
+        onAuth(userObj);
         navigate(redirectTo);
       } else {
         setError(data.message || 'Sign in failed');
