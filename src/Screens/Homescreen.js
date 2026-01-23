@@ -441,6 +441,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const freeFeatureCards = [
     {
       key: "travel",
+      className: "feature-card-blue",
       icon: "🧭",
       title: "Travel Estimation",
       status: estimation
@@ -452,6 +453,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
     },
     {
       key: "distance",
+      className: "feature-card-green",
       icon: "📏",
       title: "Distance Tracker",
       status: estimation
@@ -599,73 +601,80 @@ function Homescreen({ currentUser, setCurrentUser }) {
     <>
       {/* <JeepneyLegend /> removed as per request */}
       <CongratsModal />
-      <div className="jeeproute-page">
+      <div className="jeeproute-page dashboard-shell">
         <div className="jeeproute-navbar">
-          <div className="brand">JeepRoute</div>
-          <div className="header-actions">
-            {!loggedIn && (
-              <>
-                <button
-                  className="btn-neon-outline"
-                  onClick={() => navigate("/signin")}
-                >
-                  Sign In
-                </button>
-                <button
-                  className="btn-neon-fill"
-                  onClick={() => navigate("/signup")}
-                >
-                  Sign Up
-                </button>
-              </>
-            )}
-            {loggedIn && (
-              <>
-                <span className="welcome-msg" style={{ marginRight: 12 }}>
-                  Hi, {(currentUser?.email || "User").split("@")[0]}
-                </span>
-                <button
-                  className="btn-neon-fill"
-                  onClick={() => navigate("/profile")}
-                  style={{ marginRight: 8 }}
-                >
-                  Profile
-                </button>
-                <button
-                  className="btn-neon-outline"
-                  onClick={() => {
-                    setCurrentUser(null);
-                    localStorage.removeItem("currentUser");
-                    navigate("/");
-                  }}
-                >
-                  Logout
-                </button>
-              </>
-            )}
+          <div className="navbar-shell">
+            <div className="navbar-brand-block">
+              <div className="navbar-badge" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-truck-front" viewBox="0 0 16 16"> <path d="M5 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0m8 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-6-1a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2zM4 2a1 1 0 0 0-1 1v3.9c0 .625.562 1.092 1.17.994C5.075 7.747 6.792 7.5 8 7.5s2.925.247 3.83.394A1.008 1.008 0 0 0 13 6.9V3a1 1 0 0 0-1-1zm0 1h8v3.9q0 .002 0 0l-.002.004-.005.002h-.004C11.088 6.761 9.299 6.5 8 6.5s-3.088.26-3.99.406h-.003l-.005-.002L4 6.9q0 .002 0 0z"/> <path d="M1 2.5A2.5 2.5 0 0 1 3.5 0h9A2.5 2.5 0 0 1 15 2.5v9c0 .818-.393 1.544-1 2v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V14H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2a2.5 2.5 0 0 1-1-2zM3.5 1A1.5 1.5 0 0 0 2 2.5v9A1.5 1.5 0 0 0 3.5 13h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 12.5 1z"/></svg></div>
+              <div className="navbar-brand-copy">
+                <span className="navbar-brand-title">JeepRoute</span>
+                <span className="navbar-brand-tagline">Pampanga commute lab</span>
+              </div>
+            </div>
+            <div className="header-actions navbar-actions">
+              {!loggedIn && (
+                <>
+                  <button
+                    className="btn-neon-outline"
+                    onClick={() => navigate("/signin")}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    className="btn-neon-fill"
+                    onClick={() => navigate("/signup")}
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
+              {loggedIn && (
+                <>
+                  <span className="navbar-greeting">
+                    Hi, {(currentUser?.email || "User").split("@")[0]}
+                  </span>
+                  <button
+                    className="btn-neon-fill"
+                    onClick={() => navigate("/profile")}
+                  >
+                    Profile
+                  </button>
+                  <button
+                    className="btn-neon-outline"
+                    onClick={() => {
+                      setCurrentUser(null);
+                      localStorage.removeItem("currentUser");
+                      navigate("/");
+                    }}
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
         <div className="jeeprout-layout">
           <div className="jeeproute-grid-container">
             {/* Top Left: Jeep Routes */}
             <div className="grid-jeep-routes">
-              <div className="subtitle">
-                Smart Jeepney Planning for Pampanga Students
-              </div>
               <div className="sidebar">
                 <div className="plan-card free">
+                  <div className="plan-card-title">
+                    Smart Jeepney Planning for Pampanga Students
+                  </div>
                   {/* Mode Toggle */}
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 16, padding: '8px', background: 'rgba(30,38,49,0.3)', borderRadius: 8 }}>
+                  <div style={{ display: 'flex', gap: 'clamp(6px, 2vw, 10px)', marginBottom: 'clamp(8px, 2vw, 16px)' }}>
                     <button
                       className={useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
-                      style={{ flex: 1, fontSize: 13, padding: '6px 12px' }}
+                      style={{ flex: 1, fontSize: 'clamp(10px, 2vw, 13px)', padding: 'clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)' }}
                       onClick={() => setUseJeepneyMode(true)}
                     >
                       🚍 Jeepney Routes
                     </button>
                     <button
                       className={!useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
-                      style={{ flex: 1, fontSize: 13, padding: '6px 12px' }}
+                      style={{ flex: 1, fontSize: 'clamp(10px, 2vw, 13px)', padding: 'clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)' }}
                       onClick={() => setUseJeepneyMode(false)}
                     >
                       📍 Town to Town
@@ -829,11 +838,11 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   </p>
                   <div className="premium-feature-list">
                     <div className="premium-feature">
-                      <span>🌦️</span>
+                      <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-sun-fill" viewBox="0 0 16 16"><path d="M11.473 11a4.5 4.5 0 0 0-8.72-.99A3 3 0 0 0 3 16h8.5a2.5 2.5 0 0 0 0-5z"/><path d="M10.5 1.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 1 0zm3.743 1.964a.5.5 0 1 0-.707-.707l-.708.707a.5.5 0 0 0 .708.708zm-7.779-.707a.5.5 0 0 0-.707.707l.707.708a.5.5 0 1 0 .708-.708zm1.734 3.374a2 2 0 1 1 3.296 2.198q.3.423.516.898a3 3 0 1 0-4.84-3.225q.529.017 1.028.129m4.484 4.074c.6.215 1.125.59 1.522 1.072a.5.5 0 0 0 .039-.742l-.707-.707a.5.5 0 0 0-.854.377M14.5 6.5a.5.5 0 0 0 0 1h1a.5.5 0 0 0 0-1z"/></svg></span>
                       <span>Real-time weather insights</span>
                     </div>
                     <div className="premium-feature">
-                      <span>🚦</span>
+                      <span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-stoplights-fill" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6 0a2 2 0 0 0-2 2H2c.167.5.8 1.6 2 2v2H2c.167.5.8 1.6 2 2v2H2c.167.5.8 1.6 2 2v1a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-1c1.2-.4 1.833-1.5 2-2h-2V8c1.2-.4 1.833-1.5 2-2h-2V4c1.2-.4 1.833-1.5 2-2h-2a2 2 0 0 0-2-2zm3.5 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M8 13a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"/></svg></span>
                       <span>Live traffic conditions</span>
                     </div>
                     <div className="premium-feature">
@@ -917,7 +926,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
                     <div className="feature-grid-shell">
                       <div className="features-grid-cards free-tier">
                         {freeFeatureCards.map((card) => (
-                          <div className="feature-card" key={card.key}>
+                          <div className={`feature-card ${card.className}`} key={card.key}>
+                            <div className="feature-icon">{card.icon}</div>
                             <div className="feature-body">
                               <p className="feature-title">{card.title}</p>
                               <p className="feature-status">{card.status}</p>

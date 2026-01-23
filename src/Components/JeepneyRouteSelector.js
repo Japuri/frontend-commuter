@@ -21,15 +21,20 @@ export default function JeepneyRouteSelector({ onRouteSelect, selectedRoute }) {
     <div
       style={{
         marginBottom: 16,
-        maxHeight: "calc(73vh - 300px)",
-        overflowY: "auto",
         paddingRight: 4,
       }}
     >
       <div className="plan-header" style={{ marginBottom: 12 }}>
         Select Jeepney Route
       </div>
-      <div className="route-card-stack">
+      <div
+        className="route-card-stack"
+        style={{
+          maxHeight: "calc(73vh - 300px)",
+          overflowY: "auto",
+          paddingRight: 2,
+        }}
+      >
         {JEEPNEY_ROUTE_COLORS.map((route) => {
           const isExpanded = expandedRoute === route.color;
           const isSelected = selectedRoute?.color === route.color;
