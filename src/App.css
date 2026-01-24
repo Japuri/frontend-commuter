@@ -153,7 +153,7 @@ body {
 .jeeproute-grid-container {
   display: grid;
   grid-template-columns: clamp(320px, 30vw, 440px) 1fr clamp(140px, 12vw, 180px);
-  grid-template-rows: minmax(300px, auto) 160px;
+  grid-template-rows: 480px 160px;
   gap: clamp(10px, 1.6vw, 14px);
   padding: clamp(8px, 1.4vw, 12px);
   height: auto;
@@ -205,8 +205,9 @@ body {
   gap: 8px;
   overflow: hidden;
   box-sizing: border-box;
-  height: 100%;
-  min-height: 0;
+  height: 480px;
+  min-height: 480px;
+  max-height: 480px;
 }
 
 .grid-jeep-routes .subtitle {
@@ -243,6 +244,9 @@ body {
   .grid-jeep-routes {
     grid-column: 1;
     grid-row: 1;
+    height: auto;
+    min-height: 0;
+    max-height: none;
   }
 }
 
@@ -297,6 +301,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  align-self: start;
 }
 
 @media (max-width: 1023px) {
@@ -971,6 +976,7 @@ body {
   box-sizing: border-box;
   overflow: hidden;
   max-height: 100%;
+  align-self: start;
 }
 
 @media (max-width: 1023px) {
