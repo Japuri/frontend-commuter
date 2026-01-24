@@ -9,8 +9,6 @@ import { db, getTownById, logTrip } from "./db";
 import { logTravel } from "../services/travelLogger";
 import {
   weatherBadgeFor,
-  trafficSeverityFromData,
-  trafficBadgeFor,
   confidenceFromIndicators,
   applyPremiumOverrides,
 } from "../utils/metrics";
@@ -432,8 +430,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
     : "Plan a route for weather data";
   const trafficSummary = estimation
     ? estimation.loading
-      ? "Calculating traffic..."
-      : estimation.traffic || "Traffic pulse ready"
+      ? "Calculating ETA..."
+      : `${estimation.minutes ?? "—"} mins ETA`
     : "Plan a route for traffic data";
   const aiSummary =
     aiSuggestion?.window ||
@@ -450,21 +448,15 @@ function Homescreen({ currentUser, setCurrentUser }) {
         : "Trip analytics dashboard"
     : "Trip analytics dashboard";
 
-  const trafficSeverity = insightsReady
-    ? trafficSeverityFromData(estimation.trafficData)
-    : 0;
   const weatherBadgeName = insightsReady
     ? weatherBadgeFor(estimation.weather)
-    : "badge-info";
-  const trafficBadgeName = insightsReady
-    ? trafficBadgeFor(estimation.traffic)
     : "badge-info";
   const minEta = insightsReady
     ? Math.max(5, Math.round(estimation.minutes - 4))
     : null;
   const maxEta = insightsReady ? Math.round(estimation.minutes + 6) : null;
   const confidence = insightsReady
-    ? confidenceFromIndicators(trafficSeverity, weatherBadgeName)
+    ? confidenceFromIndicators(0, weatherBadgeName)
     : null;
 
   const premiumFeatureCards = [
@@ -476,8 +468,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
     },
     {
       key: "traffic",
-      icon: "🚦",
-      title: "Traffic Pulse",
+      icon: "⏱️",
+      title: "Travel Time",
       status: trafficSummary,
     },
     {
@@ -567,17 +559,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
           <p className="popover-line">
             Distance: <strong>{estimation.distanceKm ?? "—"} km</strong>
           </p>
-          <div className="meter-row" style={{ margin: "10px 0" }}>
-            <div className="meter-track">
-              <div className="meter-fill" style={{ width: `${trafficSeverity}%` }} />
-            </div>
-            <span className={`badge ${trafficBadgeName}`}>{estimation.traffic}</span>
-          </div>
           <div className="popover-badges">
             <span className="badge badge-ok">
               Arrival: {minEta}–{maxEta} mins
             </span>
-            <span className="badge badge-warn">Confidence: {confidence}</span>
+            <span className="badge badge-warn">Confidence: {confidence}
+            </span>
           </div>
         </div>
       );
@@ -1108,13 +1095,8 @@ function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
   const mapRef = useRef(null);
   const [routeCoords, setRouteCoords] = useState(null);
 
-  // Helper: get traffic color
+  // Helper: get traffic color (defaulted to green)
   function getTrafficColor(trafficData) {
-    const severity = trafficSeverityFromData
-      ? trafficSeverityFromData(trafficData)
-      : 0;
-    if (severity >= 70) return "#e74c3c"; // red
-    if (severity >= 40) return "#f1c40f"; // yellow
     return "#27ae60"; // green
   }
 

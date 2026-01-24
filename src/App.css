@@ -152,13 +152,13 @@ body {
 /* Grid Layout System */
 .jeeproute-grid-container {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(300px, 2.2fr) minmax(140px, 0.9fr);
-  grid-template-rows: clamp(480px, 60vh, 700px) auto;
+  grid-template-columns: minmax(200px, 1.2fr) minmax(280px, 1.9fr) minmax(150px, 0.95fr);
+  grid-template-rows: clamp(480px, 60vh, 900px) auto;
   gap: clamp(14px, 2.2vw, 24px);
   padding: clamp(12px, 2.2vw, 20px);
   height: auto;
   min-height: auto;
-  max-width: min(96vw, 1800px);
+  max-width: min(98vw, 2000px);
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -167,14 +167,14 @@ body {
 
 @media (max-width: 1279px) {
   .jeeproute-grid-container {
-    grid-template-columns: minmax(170px, 1fr) minmax(280px, 2fr) minmax(130px, 0.85fr);
+    grid-template-columns: minmax(180px, 1.15fr) minmax(260px, 1.8fr) minmax(140px, 0.9fr);
     gap: clamp(12px, 2vw, 20px);
   }
 }
 
 @media (max-width: 1100px) {
   .jeeproute-grid-container {
-    grid-template-columns: minmax(160px, 1fr) minmax(260px, 2fr) minmax(120px, 0.8fr);
+    grid-template-columns: minmax(170px, 1.1fr) minmax(240px, 1.7fr) minmax(130px, 0.9fr);
     gap: clamp(10px, 2vw, 16px);
     padding: clamp(10px, 2vw, 16px);
   }
@@ -216,7 +216,7 @@ body {
   box-sizing: border-box;
   height: 100%;
   min-height: 240px;
-  max-height: clamp(480px, 60vh, 700px);
+  max-height: clamp(480px, 60vh, 900px);
   align-self: start;
   justify-content: flex-start;
 }
@@ -336,7 +336,7 @@ body {
 }
 
 .features-header {
-  font-size: clamp(13px, 1.2vw, 15px);
+  font-size: clamp(13px, 1.2vw, 18px);
   font-weight: 600;
   color: var(--brand);
   margin-top: 0;
@@ -1208,11 +1208,12 @@ body {
   padding: 12px 14px;
   box-sizing: border-box;
   color: var(--text);
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
   min-height: 0;
+  max-height: 100%;
 }
 
 @media (max-width: 1279px) {
@@ -1242,7 +1243,7 @@ body {
 }
 
 .plan-card-title {
-  font-size: clamp(10px, 1.6vw, 13px);
+  font-size: clamp(10px, 1.6vw, 16px);
   font-weight: 600;
   color: var(--text);
   margin-bottom: 6px;
@@ -1331,7 +1332,7 @@ body {
 .route-card-title {
   font-weight: 600;
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: clamp(0.85rem, 1.6vw, 1.2rem);
   margin: 0 0 2px;
 }
 
@@ -1340,7 +1341,7 @@ body {
 }
 
 .route-card-subtext {
-  font-size: 0.75rem;
+  font-size: clamp(0.7rem, 1.2vw, 1.05rem);
   color: var(--muted);
   margin: 0;
 }
@@ -1612,13 +1613,13 @@ body {
 }
 
 .navbar-brand-title {
-  font-size: clamp(14px, 2vw, 16px);
+  font-size: clamp(14px, 2vw, 18px);
   font-weight: 700;
   color: var(--text);
 }
 
 .navbar-brand-tagline {
-  font-size: clamp(11px, 1.7vw, 12px);
+  font-size: clamp(11px, 1.7vw, 14px);
   color: var(--muted);
 }
 
@@ -1867,7 +1868,7 @@ body {
 }
 
 .plan-header {
-  font-size: clamp(15px, 2vw, 17px);
+  font-size: clamp(15px, 2vw, 19px);
   font-weight: 800;
   margin-bottom: 4px;
   margin-top: 4px;
@@ -1883,7 +1884,7 @@ body {
 }
 
 .plan-price {
-  font-size: clamp(22px, 2.6vw, 26px);
+  font-size: clamp(22px, 2.6vw, 32px);
   font-weight: 800;
   display: flex;
   align-items: baseline;
@@ -2101,7 +2102,7 @@ body {
   gap: clamp(16px, 2.5vw, 22px);
   padding: clamp(12px, 2.8vw, 18px);
   width: 100%;
-  max-width: 1800px;
+  max-width: 2000px;
   margin: 0 auto;
   flex: 1;
   min-height: calc(100vh - 88px);
