@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Spinner from './Spinner';
 import authFetch from '../utils/authFetch';
+import { API_BASE_URL } from '../utils/api';
 
 export default function JeepneyStopsEstimation({ route, onBack }) {
   const [etas, setEtas] = useState([]);
@@ -19,7 +20,7 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
       }
       try {
         // Call backend endpoint for ETA calculation
-        const res = await authFetch('/api/mapbox-eta/', {
+        const res = await authFetch(`${API_BASE_URL}/api/mapbox-eta/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
