@@ -152,13 +152,13 @@ body {
 /* Grid Layout System */
 .jeeproute-grid-container {
   display: grid;
-  grid-template-columns: minmax(260px, 28vw) minmax(420px, 1fr) minmax(200px, 26vw);
-  grid-template-rows: minmax(260px, auto) auto;
-  gap: clamp(12px, 2vw, 20px);
-  padding: clamp(10px, 2vw, 18px);
+  grid-template-columns: minmax(180px, 1fr) minmax(300px, 2.2fr) minmax(140px, 0.9fr);
+  grid-template-rows: clamp(480px, 60vh, 700px) auto;
+  gap: clamp(14px, 2.2vw, 24px);
+  padding: clamp(12px, 2.2vw, 20px);
   height: auto;
   min-height: auto;
-  max-width: min(1500px, calc(100vw - clamp(16px, 3vw, 36px)));
+  max-width: min(96vw, 1800px);
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -167,14 +167,14 @@ body {
 
 @media (max-width: 1279px) {
   .jeeproute-grid-container {
-    grid-template-columns: minmax(240px, 30vw) minmax(360px, 1fr) minmax(180px, 24vw);
-    gap: clamp(10px, 2vw, 18px);
+    grid-template-columns: minmax(170px, 1fr) minmax(280px, 2fr) minmax(130px, 0.85fr);
+    gap: clamp(12px, 2vw, 20px);
   }
 }
 
 @media (max-width: 1100px) {
   .jeeproute-grid-container {
-    grid-template-columns: minmax(220px, 32vw) minmax(320px, 1fr) minmax(160px, 22vw);
+    grid-template-columns: minmax(160px, 1fr) minmax(260px, 2fr) minmax(120px, 0.8fr);
     gap: clamp(10px, 2vw, 16px);
     padding: clamp(10px, 2vw, 16px);
   }
@@ -211,13 +211,14 @@ body {
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 1vw, 12px);
+  gap: clamp(4px, 0.6vw, 8px);
   overflow: visible;
   box-sizing: border-box;
-  height: auto;
+  height: 100%;
   min-height: 240px;
-  max-height: none;
+  max-height: clamp(480px, 60vh, 700px);
   align-self: start;
+  justify-content: flex-start;
 }
 
 .grid-jeep-routes .subtitle {
@@ -233,7 +234,7 @@ body {
   overflow: visible;
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.2vw, 14px);
+  gap: clamp(4px, 0.8vw, 8px);
 }
 
 @media (max-width: 768px) {
@@ -1060,10 +1061,10 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  flex: 0 0 440px;
+  flex: 0 0 auto;
   width: 100%;
-  max-width: 460px;
-  min-width: 360px;
+  max-width: 100%;
+  min-width: 0;
   height: auto;
   gap: 12px;
   box-sizing: border-box;
@@ -1072,9 +1073,9 @@ body {
 
 @media (max-width: 1279px) {
   .jeeproute-left {
-    flex: 0 0 360px;
-    max-width: 380px;
-    min-width: 300px;
+    flex: 0 0 auto;
+    max-width: 100%;
+    min-width: 0;
   }
 }
 
@@ -1204,14 +1205,26 @@ body {
   background: var(--panel);
   border: 1px solid var(--border-light);
   border-radius: 24px;
-  padding: 20px 22px;
+  padding: 12px 14px;
   box-sizing: border-box;
   color: var(--text);
-  overflow-y: auto;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
   min-height: 0;
+}
+
+@media (max-width: 1279px) {
+  .plan-card {
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .plan-card {
+    padding: 8px 10px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1229,10 +1242,10 @@ body {
 }
 
 .plan-card-title {
-  font-size: clamp(11px, 1.6vw, 13px);
+  font-size: clamp(10px, 1.6vw, 13px);
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   line-height: 1.4;
   letter-spacing: 0.2px;
   text-align: center;
@@ -1273,14 +1286,16 @@ body {
 .route-card-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   flex: 1;
+  overflow-y: auto;
+  max-height: clamp(300px, 50vh, 550px);
 }
 
 .route-card {
   border: 2px solid var(--route-card-border);
   border-radius: 18px;
-  padding: 14px 12px 12px;
+  padding: 8px 10px 8px;
   background: var(--route-card);
   box-shadow: none;
   cursor: pointer;
@@ -1301,7 +1316,7 @@ body {
 .route-card-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .route-chip {
@@ -1336,8 +1351,8 @@ body {
 }
 
 .route-card-details {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid var(--border-light);
 }
 
@@ -1559,7 +1574,7 @@ body {
 }
 
 .navbar-shell {
-  width: min(1180px, 100%);
+  width: min(1800px, 96vw);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2086,6 +2101,8 @@ body {
   gap: clamp(16px, 2.5vw, 22px);
   padding: clamp(12px, 2.8vw, 18px);
   width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
   flex: 1;
   min-height: calc(100vh - 88px);
   box-sizing: border-box;
@@ -2112,7 +2129,7 @@ body {
   gap: 10px;
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
   padding-right: 4px;
   box-sizing: border-box;
 }
