@@ -30,7 +30,7 @@ export default function JeepneyRouteSelector({ onRouteSelect, selectedRoute }) {
       <div
         className="route-card-stack"
         style={{
-          maxHeight: "calc(73vh - 300px)",
+          maxHeight: "calc(70vh - 300px)",
           overflowY: "auto",
           paddingRight: 2,
         }}

@@ -737,20 +737,6 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
                   {useJeepneyMode ? (
                     <div className="jeeproute-select-block">
-                      {/* Multi-leg Jeepney Trip Planner */}
-                      {plannedTrips.length > 0 && (
-                        <div style={{ marginBottom: 16 }}>
-                          <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 14 }}>Planned Trips:</div>
-                          {plannedTrips.map((trip, idx) => (
-                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, background: '#f8f9fa', borderRadius: 8, padding: '6px 10px' }}>
-                              <span style={{ color: trip.hex, fontWeight: 500, fontSize: 13 }}>{trip.color} Route</span>
-                              <span style={{ flex: 1, color: '#2a3441', fontSize: 12 }}>{trip.route}</span>
-                              <button onClick={() => handleRemoveTrip(idx)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 16 }}>✕</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
                       <JeepneyRouteSelector
                         onRouteSelect={(route) => {
                           setCurrentRoute(route);
@@ -868,8 +854,11 @@ function Homescreen({ currentUser, setCurrentUser }) {
                     </div>
                     {/* Show stop-by-stop ETAs for each trip */}
                     {plannedTrips.map((trip, idx) => (
-                      <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px' }}>
-                        <div style={{ fontWeight: 600, color: trip.hex, fontSize: 15, marginBottom: 4 }}>{trip.color} Route: {trip.route}</div>
+                      <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px', border: `2px solid ${trip.hex}`, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <div style={{ fontWeight: 600, color: trip.hex, fontSize: 15, textShadow: '0 0 9px rgba(0, 0, 0, 0.59)' }}>{trip.color} Route: {trip.route}</div>
+                          <button onClick={() => handleRemoveTrip(idx)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 18, padding: '0 4px' }}>✕</button>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {tripStats[idx]?.stopEtas?.map((stop, sidx) => (
                             <div key={sidx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
