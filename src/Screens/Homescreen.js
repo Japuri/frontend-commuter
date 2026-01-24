@@ -14,6 +14,8 @@ import {
   confidenceFromIndicators,
   applyPremiumOverrides,
 } from "../utils/metrics";
+import { API_BASE_URL } from "../utils/api";
+import authFetch from "../utils/authFetch";
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -28,8 +30,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
 
-  // --- Use Mapbox Directions API for real trip estimation ---
-  const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+  // --- Use backend API for trip estimation ---
   const [tripStats, setTripStats] = useState([]); // [{distance, duration, cost, stopEtas: [{name, eta}]}]
 
   useEffect(() => {
@@ -37,32 +38,32 @@ function Homescreen({ currentUser, setCurrentUser }) {
       const stats = await Promise.all(
         plannedTrips.map(async (trip) => {
           if (!trip.stops || trip.stops.length < 2) return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
-          // Build coordinates string for Mapbox API
-          const coords = trip.stops.map(s => `${s.lng},${s.lat}`).join(';');
-          const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
           try {
-            const res = await fetch(url);
-            const data = await res.json();
-            const route = data.routes?.[0];
-            if (route && data.waypoints) {
-              // Mapbox returns distance in meters, duration in seconds
-              const distanceKm = route.distance / 1000;
-              const durationMin = Math.round(route.duration / 60);
-              const cost = 12 + Math.ceil(distanceKm * 2);
-              // Calculate ETA for each stop
-              let stopEtas = [];
-              let cumulativeSec = 0;
-              if (route.legs && route.legs.length === trip.stops.length - 1) {
-                stopEtas.push({ name: trip.stops[0].name, eta: 0 });
-                for (let i = 0; i < route.legs.length; i++) {
-                  cumulativeSec += route.legs[i].duration;
-                  stopEtas.push({ name: trip.stops[i + 1].name, eta: Math.round(cumulativeSec / 60) });
-                }
-              }
-              return { distance: distanceKm, duration: durationMin, cost, stopEtas };
+            // Use backend endpoint instead of direct Mapbox API call
+            const res = await authFetch(`${API_BASE_URL}/api/mapbox-eta/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ stops: trip.stops }),
+            });
+            if (!res.ok) {
+              throw new Error('Failed to fetch trip stats');
             }
-          } catch {}
-          return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
+            const data = await res.json();
+            // Backend returns etas array with {name, eta}
+            const stopEtas = data.etas || [];
+            // Calculate totals from ETA data
+            const lastStop = stopEtas[stopEtas.length - 1];
+            const durationMin = lastStop?.eta || 0;
+            // Estimate distance based on duration (assuming ~25 km/h average)
+            const distanceKm = (durationMin / 60) * 25;
+            const cost = 12 + Math.ceil(distanceKm * 2);
+            return { distance: distanceKm, duration: durationMin, cost, stopEtas };
+          } catch (e) {
+            console.error('Error fetching trip stats:', e);
+            return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
+          }
         })
       );
       setTripStats(stats);
@@ -1100,7 +1101,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
 }
 
 // Mapbox 3D Map Component
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || 'pk.eyJ1IjoiamFwdXJpIiwiYSI6ImNtampoeW10czIxMW8zZHF4dTE2cGJ5bHMifQ.vcz9vRGxvmuiRYQlO8iaXg';
 
 function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
   const mapContainer = useRef(null);
