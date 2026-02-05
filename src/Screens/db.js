@@ -95,21 +95,6 @@ export function authenticateUser(username, password) {
 	return null;
 }
 
-// Upgrade user subscription status
-export const upgradeSubscription = async (userId, token, newStatus) => {
-	const headers = { 'Content-Type': 'application/json' };
-	if (token) headers['Authorization'] = `Bearer ${token}`;
-	const navigate = window.navigateForAuthFetch;
-	const resp = await authFetch(`${API_BASE_URL}/api/users/${userId}/subscription`, {
-		method: 'POST',
-		headers,
-		credentials: 'include',
-		body: JSON.stringify({ subscription_status: newStatus })
-	}, navigate);
-	if (!resp.ok) throw new Error('Failed to update subscription');
-	return await resp.json();
-};
-
 // Log a new trip to the backend
 export const logTrip = async (userId, token, tripData) => {
 	const headers = { 'Content-Type': 'application/json' };

@@ -5,8 +5,10 @@ import LoginScreen from './Screens/LoginScreen';
 import SignIn from './Screens/SignIn';
 import SignUp from './Screens/SignUp';
 import ProfileScreen from './Screens/ProfileScreen';
-import { useState, useEffect } from 'react';
 import PaymentScreen from './Screens/PaymentScreen';
+import PaymentSuccessScreen from './Screens/PaymentSuccessScreen';
+import PaymentCancelScreen from './Screens/PaymentCancelScreen';
+import { useState, useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -69,7 +71,9 @@ function App() {
             setCurrentUser(normalized);
             localStorage.setItem('currentUser', JSON.stringify(normalized));
           }} />} />
-        <Route path="/payment" element={<PaymentScreen currentUser={currentUser} />} />
+        <Route path="/payment" element={<PaymentScreen currentUser={currentUser} token={currentUser?.token} />} />
+        <Route path="/payment/success" element={<PaymentSuccessScreen currentUser={currentUser} token={currentUser?.token} />} />
+        <Route path="/payment/cancel" element={<PaymentCancelScreen />} />
         <Route path="/profile" element={<ProfileScreen currentUser={currentUser} token={currentUser?.token} />} />
       </Routes>
     </Router>
