@@ -56,4 +56,5 @@ export async function authFetch(input, init = {}) {
   return fetch(input, opts);
 }
 
-export default { login, logout, getAccessToken, refreshAccessToken, authFetch };
+const authService = { login, logout, getAccessToken, refreshAccessToken, authFetch };
+export default authService;

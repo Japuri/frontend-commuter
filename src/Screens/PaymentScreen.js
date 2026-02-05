@@ -13,6 +13,7 @@ function PaymentScreen({ currentUser, token }) {
 
   useEffect(() => {
     fetchSubscriptionStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSubscriptionStatus = async () => {

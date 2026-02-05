@@ -65,6 +65,7 @@ export default function ProfileScreen({ currentUser, token }) {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser, token, location.key]);
 
   // Refetch data when the page becomes visible (user navigates back)
@@ -76,6 +77,7 @@ export default function ProfileScreen({ currentUser, token }) {
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
   if (loading) return <div className="profile-loading">Loading profile...</div>;
