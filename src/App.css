@@ -1252,6 +1252,7 @@ body {
   text-align: center;
 }
 
+
 @media (max-width: 480px) {
   .plan-card-title {
     font-size: 11px;
@@ -1580,7 +1581,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: clamp(8px, 2vw, 16px);
-  padding: 5px 10px;
+  padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid var(--border-light);
   background: #ffffff;
@@ -1632,7 +1633,7 @@ body {
 .navbar-greeting {
   background: #edf2ff;
   color: var(--text);
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -1640,21 +1641,68 @@ body {
 
 .jeeproute-navbar .btn-neon-fill,
 .jeeproute-navbar .btn-neon-outline {
-  min-height: 34px;
-  padding: 6px 12px;
+  min-height: 38px;
+  padding: 8px 16px;
   font-size: 12px;
   border-radius: 999px;
 }
 
 @media (max-width: 640px) {
+  .jeeproute-navbar {
+    padding: 10px;
+  }
+  
   .navbar-shell {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    padding: 14px;
+    gap: 12px;
+    border-radius: 12px;
+    box-sizing: border-box;
   }
+  
+  .navbar-brand-block {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .navbar-badge {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .navbar-brand-title {
+    font-size: 15px;
+  }
+  
+  .navbar-brand-tagline {
+    font-size: 11px;
+  }
+  
   .navbar-actions {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .navbar-greeting {
+    font-size: 11px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    border-radius: 8px;
+  }
+  
+  .jeeproute-navbar .btn-neon-fill,
+  .jeeproute-navbar .btn-neon-outline {
+    min-height: 36px;
+    padding: 8px 14px;
+    font-size: 12px;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    border-radius: 10px;
   }
 }
 
