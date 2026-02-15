@@ -44,27 +44,36 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
   if (!route || !route.stops || route.stops.length === 0) return null;
 
   return (
-    <div className="plan-card free" style={{ marginTop: 16 }}>
-      <div className="plan-header">Jeepney Route Stops & Estimation</div>
-      <div style={{ marginBottom: 12, color: '#7f94a8', fontSize: 14 }}>
-        {route.color} Route: {route.route}
+    <div
+      className="plan-card free route-estimation"
+      style={{ marginTop: 16, '--route-accent': route.hex }}
+    >
+      <div className="plan-header route-estimation__title">
+        Jeepney Route Stops & Estimation
+      </div>
+      <div className="route-estimation__meta">
+        <span className="route-estimation__badge" aria-hidden="true" />
+        <span className="route-estimation__label">{route.color} Route:</span>
+        <span className="route-estimation__value">{route.route}</span>
       </div>
       {loading ? (
         <Spinner size={54} color={route.hex} text="Calculating ETAs..." />
       ) : error ? (
-        <div style={{ color: 'red', fontSize: 15, textAlign: 'center', margin: '18px 0' }}>{error}</div>
+        <div className="route-estimation__error">{error}</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 320, overflowY: 'auto' }}>
+        <div className="route-estimation__list">
           {etas.map((stop, idx) => (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f8f9fa', borderRadius: 8, padding: '8px 14px' }}>
-              <span style={{ fontWeight: 600, color: route.hex, minWidth: 60 }}>{idx + 1}{['st','nd','rd'][idx] || 'th'} stop</span>
-              <span style={{ flex: 1, color: '#2a3441', fontWeight: 500 }}>{stop.name}</span>
-              <span style={{ color: '#7f94a8', fontSize: 13 }}>ETA: {stop.eta} min</span>
+            <div key={idx} className="route-estimation__row">
+              <span className="route-estimation__stop-index">
+                {idx + 1}{['st', 'nd', 'rd'][idx] || 'th'} stop
+              </span>
+              <span className="route-estimation__stop-name">{stop.name}</span>
+              <span className="route-estimation__eta">ETA: {stop.eta} min</span>
             </div>
           ))}
         </div>
       )}
-      <button className="btn-neon-outline" style={{ marginTop: 18 }} onClick={onBack}>
+      <button className="btn-neon-outline route-estimation__back" onClick={onBack}>
         Back to Route Selection
       </button>
     </div>

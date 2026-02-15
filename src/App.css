@@ -1252,6 +1252,7 @@ body {
   text-align: center;
 }
 
+
 @media (max-width: 480px) {
   .plan-card-title {
     font-size: 11px;
@@ -1580,7 +1581,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: clamp(8px, 2vw, 16px);
-  padding: 5px 10px;
+  padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid var(--border-light);
   background: #ffffff;
@@ -1632,7 +1633,7 @@ body {
 .navbar-greeting {
   background: #edf2ff;
   color: var(--text);
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -1640,21 +1641,68 @@ body {
 
 .jeeproute-navbar .btn-neon-fill,
 .jeeproute-navbar .btn-neon-outline {
-  min-height: 34px;
-  padding: 6px 12px;
+  min-height: 38px;
+  padding: 8px 16px;
   font-size: 12px;
   border-radius: 999px;
 }
 
 @media (max-width: 640px) {
+  .jeeproute-navbar {
+    padding: 10px;
+  }
+  
   .navbar-shell {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    padding: 14px;
+    gap: 12px;
+    border-radius: 12px;
+    box-sizing: border-box;
   }
+  
+  .navbar-brand-block {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .navbar-badge {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .navbar-brand-title {
+    font-size: 15px;
+  }
+  
+  .navbar-brand-tagline {
+    font-size: 11px;
+  }
+  
   .navbar-actions {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .navbar-greeting {
+    font-size: 11px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    border-radius: 8px;
+  }
+  
+  .jeeproute-navbar .btn-neon-fill,
+  .jeeproute-navbar .btn-neon-outline {
+    min-height: 36px;
+    padding: 8px 14px;
+    font-size: 12px;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    border-radius: 10px;
   }
 }
 
@@ -2222,6 +2270,218 @@ body {
   align-items: center;
   padding: clamp(12px, 3vw, 20px);
   width: 100%;
+}
+
+.payment-page {
+  background: radial-gradient(circle at 10% 0%, rgba(27, 99, 209, 0.08), transparent 45%),
+    radial-gradient(circle at 90% 5%, rgba(18, 211, 255, 0.12), transparent 50%),
+    var(--bg);
+}
+
+.payment-hero {
+  padding: clamp(20px, 4vw, 36px) clamp(16px, 4vw, 32px) 0;
+  text-align: center;
+}
+
+.payment-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(27, 99, 209, 0.12);
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+.payment-hero__title {
+  margin: 10px 0 6px;
+  font-size: clamp(22px, 4vw, 32px);
+  font-weight: 800;
+  color: #0f1f35;
+  letter-spacing: -0.4px;
+}
+
+.payment-hero__copy {
+  margin: 0 auto;
+  max-width: 620px;
+  color: #4f5f78;
+  font-size: clamp(14px, 2vw, 16px);
+}
+
+.payment-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: clamp(16px, 3vw, 24px);
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 28px) 0 clamp(24px, 5vw, 40px);
+}
+
+.payment-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: clamp(18px, 3vw, 24px);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 20px 45px rgba(15, 34, 65, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.payment-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.payment-card__label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-card__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f1f35;
+}
+
+.payment-card__price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.payment-card__amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.payment-card__period {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.payment-summary {
+  background: #f6f9ff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(27, 99, 209, 0.12);
+  color: #23324a;
+}
+
+.payment-summary__title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #1b253a;
+}
+
+.payment-summary__features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.payment-summary__features li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #2b3b52;
+}
+
+.payment-summary__features li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f5aff, #12d3ff);
+  box-shadow: 0 4px 10px rgba(16, 90, 255, 0.25);
+}
+
+.payment-summary__status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #2b3b52;
+}
+
+.payment-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.payment-panel {
+  background: linear-gradient(150deg, #ffffff 0%, #f1f6ff 100%);
+  border-radius: 22px;
+  padding: clamp(16px, 3vw, 22px);
+  border: 1px solid rgba(27, 99, 209, 0.16);
+  box-shadow: 0 16px 32px rgba(15, 34, 65, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.payment-panel__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f1f35;
+}
+
+.payment-panel__copy {
+  font-size: 13px;
+  color: #4f5f78;
+  line-height: 1.5;
+}
+
+.payment-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-panel__item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.payment-panel__item strong {
+  display: block;
+  font-size: 13px;
+  color: #1b253a;
+}
+
+.payment-panel__item p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #5b6d86;
+}
+
+.payment-panel__note {
+  font-size: 12px;
+  color: #5b6d86;
+  border-top: 1px dashed rgba(27, 99, 209, 0.2);
+  padding-top: 10px;
+}
+
+@media (max-width: 1023px) {
+  .payment-shell {
+    grid-template-columns: 1fr;
+  }
 }
 
 .paypal-mock {
