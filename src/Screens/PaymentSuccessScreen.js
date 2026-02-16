@@ -13,9 +13,18 @@ function PaymentSuccessScreen({ currentUser, token }) {
     const executeSubscription = async () => {
       const token_param = searchParams.get("token");
       const ba_token = searchParams.get("ba_token");
+      const subscription_id = searchParams.get("subscription_id");
       const plan = searchParams.get("plan") || "plus";
 
-      const paypalToken = token_param || ba_token;
+      const paypalToken = subscription_id || token_param || ba_token;
+
+      console.log("PayPal redirect params:", {
+        token_param,
+        ba_token,
+        subscription_id,
+        plan,
+        allParams: Object.fromEntries(searchParams.entries())
+      });
 
       if (!paypalToken) {
         setError("Invalid payment token");
