@@ -33,7 +33,7 @@ function DetailScreen({ currentUser }) {
             </div>
           </div>
           <div className="details-hero-cta">
-            <div className="cta-price">₱99/mo</div>
+            <div className="cta-price">₱199/mo</div>
             <div className="cta-note">Cancel anytime • First month ready now</div>
             <button className="btn-hero-upgrade" onClick={handleUpgrade}>
               Unlock Plus
@@ -49,10 +49,11 @@ function DetailScreen({ currentUser }) {
             </div>
             <ul className="plan-features">
               <li className="included feature-text-free">Town-to-town route selection</li>
+              <li className="included feature-text-free">Fare Calculator</li>
               <li className="included feature-text-free">Basic distance calculation</li>
-              <li className="excluded feature-text-excluded">Real-time weather data</li>
-              <li className="excluded feature-text-excluded">Estimated travel time</li>
-              <li className="excluded feature-text-excluded">AI-powered predictions</li>
+              <li className="included feature-text-free">Estimated travel time</li>
+              <li className="excluded feature-text-excluded">Weather Tracking</li>
+              <li className="excluded feature-text-excluded">AI-powered insights</li>
             </ul>
             <div className="current-plan">Current Plan</div>
           </div>
@@ -61,14 +62,13 @@ function DetailScreen({ currentUser }) {
             <div className="plan-chip chip-text">Most popular</div>
             <div className="plan-header plan-header-plus">Plus</div>
             <div className="plan-price plan-price-plus">
-              ₱99 <span className="per per-plus">/ month</span>
+              ₱199 <span className="per per-plus">/ month</span>
             </div>
             <ul className="plan-features">
               <li className="included feature-text-plus">Everything in Free, plus:</li>
-              <li className="included feature-text-plus">Live weather at start & end</li>
-              <li className="included feature-text-plus">Accurate AI travel time</li>
-              <li className="included feature-text-plus">Traffic pattern insights</li>
-              <li className="included feature-text-plus">Weather-based delay signals</li>
+              <li className="included feature-text-plus">Weather Tracking</li>
+              <li className="included feature-text-plus">AI-powered insights</li>
+              <li className="included feature-text-plus">Route pattern insights</li>
               <li className="included feature-text-plus">Optimal departure windows</li>
               <li className="included feature-text-plus">Priority support</li>
             </ul>

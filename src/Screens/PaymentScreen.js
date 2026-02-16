@@ -112,7 +112,7 @@ function PaymentScreen({ currentUser, token }) {
   const planDetails = {
     plus: {
       name: "JeepRoute Plus",
-      price: "₱99",
+      price: "₱199",
       features: [
         "Accurate travel times",
         "Weather insights",
@@ -261,7 +261,7 @@ function PaymentScreen({ currentUser, token }) {
                 <span>🌦️</span>
                 <div>
                   <strong>Live context</strong>
-                  <p>Weather + traffic insights tailored for you.</p>
+                  <p>Weather + route insights tailored for you.</p>
                 </div>
               </div>
               <div className="payment-panel__item">
