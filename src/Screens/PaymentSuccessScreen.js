@@ -3,6 +3,15 @@ import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../utils/api";
 import authFetch from "../utils/authFetch";
 
+// Helper function to normalize user object and add is_premium flag
+const normalizeUser = (user) => {
+  if (!user) return null;
+  return {
+    ...user,
+    is_premium: user.subscription_status === 'plus' || user.subscription_status === 'premium'
+  };
+};
+
 function PaymentSuccessScreen({ currentUser, token }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -64,10 +73,10 @@ function PaymentSuccessScreen({ currentUser, token }) {
               
               if (profileResponse.ok) {
                 const profileData = await profileResponse.json();
-                const updatedUser = {
+                const updatedUser = normalizeUser({
                   ...currentUser,
                   subscription_status: profileData.subscription_status
-                };
+                });
                 localStorage.setItem('currentUser', JSON.stringify(updatedUser));
               }
             } catch (err) {

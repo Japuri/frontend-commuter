@@ -34,10 +34,19 @@ function SetGlobalNavigate() {
   return null;
 }
 
+// Helper function to normalize user object and add is_premium flag
+const normalizeUser = (user) => {
+  if (!user) return null;
+  return {
+    ...user,
+    is_premium: user.subscription_status === 'plus' || user.subscription_status === 'premium'
+  };
+};
+
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('currentUser');
-    return savedUser ? JSON.parse(savedUser) : null;
+    return savedUser ? normalizeUser(JSON.parse(savedUser)) : null;
   });
 
   useEffect(() => {
@@ -45,7 +54,7 @@ function App() {
     if (!savedUser && currentUser) {
       setCurrentUser(null);
     } else if (savedUser && (!currentUser || savedUser !== JSON.stringify(currentUser))) {
-      setCurrentUser(JSON.parse(savedUser));
+      setCurrentUser(normalizeUser(JSON.parse(savedUser)));
     }
   }, [currentUser]);
 
@@ -62,14 +71,16 @@ function App() {
         <Route
           path="/signin" element={<SignIn onAuth={(user) => {
             const normalized = user?.user ? { ...user.user, token: user.token } : user;
-            setCurrentUser(normalized);
-            localStorage.setItem('currentUser', JSON.stringify(normalized));
+            const withPremium = normalizeUser(normalized);
+            setCurrentUser(withPremium);
+            localStorage.setItem('currentUser', JSON.stringify(withPremium));
           }} />} />
         <Route
           path="/signup" element={<SignUp onAuth={(user) => {
             const normalized = user?.user ? { ...user.user, token: user.token } : user;
-            setCurrentUser(normalized);
-            localStorage.setItem('currentUser', JSON.stringify(normalized));
+            const withPremium = normalizeUser(normalized);
+            setCurrentUser(withPremium);
+            localStorage.setItem('currentUser', JSON.stringify(withPremium));
           }} />} />
         <Route path="/payment" element={<PaymentScreen currentUser={currentUser} token={currentUser?.token} />} />
         <Route path="/payment/success" element={<PaymentSuccessScreen currentUser={currentUser} token={currentUser?.token} />} />
