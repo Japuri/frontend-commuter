@@ -36,11 +36,14 @@ function SetGlobalNavigate() {
 
 // Helper function to normalize user object and add is_premium flag
 const normalizeUser = (user) => {
+  console.log('normalizeUser input:', user);
   if (!user) return null;
-  return {
+  const normalized = {
     ...user,
     is_premium: user.subscription_status === 'plus' || user.subscription_status === 'premium'
   };
+  console.log('normalizeUser output:', normalized);
+  return normalized;
 };
 
 function App() {
@@ -84,15 +87,17 @@ function App() {
           path="/login" element={<LoginScreen setCurrentUser={setCurrentUser}/>} />
         <Route
           path="/signin" element={<SignIn onAuth={(user) => {
-            const normalized = user?.user ? { ...user.user, token: user.token } : user;
-            const withPremium = normalizeUser(normalized);
+            console.log('SignIn onAuth called with:', user);
+            const withPremium = normalizeUser(user);
+            console.log('After normalizeUser:', withPremium);
             setCurrentUser(withPremium);
             localStorage.setItem('currentUser', JSON.stringify(withPremium));
           }} />} />
         <Route
           path="/signup" element={<SignUp onAuth={(user) => {
-            const normalized = user?.user ? { ...user.user, token: user.token } : user;
-            const withPremium = normalizeUser(normalized);
+            console.log('SignUp onAuth called with:', user);
+            const withPremium = normalizeUser(user);
+            console.log('After normalizeUser:', withPremium);
             setCurrentUser(withPremium);
             localStorage.setItem('currentUser', JSON.stringify(withPremium));
           }} />} />
