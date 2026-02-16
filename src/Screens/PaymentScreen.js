@@ -12,12 +12,19 @@ function PaymentScreen({ currentUser, token }) {
   const planType = location.state?.plan || "plus";
 
   useEffect(() => {
+    if (!currentUser || !token) {
+      navigate("/signin", { state: { redirectTo: "/payment" } });
+      return;
+    }
     fetchSubscriptionStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSubscriptionStatus = async () => {
-    if (!currentUser || !token) return;
+    if (!currentUser || !token) {
+      navigate("/signin", { state: { redirectTo: "/payment" } });
+      return;
+    }
     
     try {
       const response = await authFetch(
