@@ -46,15 +46,29 @@ const normalizeUser = (user) => {
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('currentUser');
-    return savedUser ? normalizeUser(JSON.parse(savedUser)) : null;
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      const normalized = normalizeUser(parsed);
+      // Update localStorage with normalized version
+      localStorage.setItem('currentUser', JSON.stringify(normalized));
+      return normalized;
+    }
+    return null;
   });
 
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
     if (!savedUser && currentUser) {
       setCurrentUser(null);
-    } else if (savedUser && (!currentUser || savedUser !== JSON.stringify(currentUser))) {
-      setCurrentUser(normalizeUser(JSON.parse(savedUser)));
+    } else if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      const normalized = normalizeUser(parsed);
+      // Always ensure is_premium is set correctly
+      if (currentUser?.subscription_status !== parsed.subscription_status || 
+          currentUser?.is_premium !== normalized.is_premium) {
+        setCurrentUser(normalized);
+        localStorage.setItem('currentUser', JSON.stringify(normalized));
+      }
     }
   }, [currentUser]);
 

@@ -149,7 +149,13 @@ function Homescreen({ currentUser, setCurrentUser }) {
   useEffect(() => {
     setAiSuggestion(null);
     setAiError("");
-  }, [startTown, endTown]);
+    // Debug log to verify premium status
+    console.log('Current user premium status:', {
+      subscription_status: currentUser?.subscription_status,
+      is_premium: currentUser?.is_premium,
+      currentUser
+    });
+  }, [startTown, endTown, currentUser]);
   // Jeepney route selection state
   const [selectedJeepneyRoute, setSelectedJeepneyRoute] = useState(null);
   const [useJeepneyMode, setUseJeepneyMode] = useState(true);
