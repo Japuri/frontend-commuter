@@ -49,6 +49,32 @@ function PaymentSuccessScreen({ currentUser, token }) {
 
         if (response.ok) {
           sessionStorage.setItem("showCongrats", "1");
+          
+          // Refresh user data to update subscription status
+          if (currentUser && currentUser.id) {
+            try {
+              const profileResponse = await authFetch(
+                `${API_BASE_URL}/api/users/${currentUser.id}/profile`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                  credentials: "include",
+                },
+                navigate
+              );
+              
+              if (profileResponse.ok) {
+                const profileData = await profileResponse.json();
+                const updatedUser = {
+                  ...currentUser,
+                  subscription_status: profileData.subscription_status
+                };
+                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+              }
+            } catch (err) {
+              console.error("Failed to refresh profile:", err);
+            }
+          }
+          
           setTimeout(() => {
             navigate("/profile");
           }, 2000);
