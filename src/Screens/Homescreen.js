@@ -5,7 +5,7 @@ import TownSelector from "../Components/TownSelector";
 import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
 import JeepneyStopsEstimation from "../Components/JeepneyStopsEstimation";
 import { db, getTownById, logTrip } from "./db";
-// import JeepneyLegend from "../Components/JeepneyLegend";
+// ...existing code...
 import { logTravel } from "../services/travelLogger";
 import {
   weatherBadgeFor,
@@ -17,7 +17,7 @@ import authFetch from "../utils/authFetch";
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-// import { JEEPNEY_ROUTE_COLORS } from '../data/jeepney_routes';
+// ...existing code...
 
 function Homescreen({ currentUser, setCurrentUser }) {
   const getReadableRouteColor = (hex) => {
@@ -32,16 +32,16 @@ function Homescreen({ currentUser, setCurrentUser }) {
     const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
     return luminance > 0.78 ? "#1b253a" : `#${full}`;
   };
-  // Multi-trip planning state
-  const [plannedTrips, setPlannedTrips] = useState([]); // Array of selected routes
-  const [currentRoute, setCurrentRoute] = useState(null); // Route being selected
-  // AI Suggestion state for premium users
+  // ...existing code...
+  const [plannedTrips, setPlannedTrips] = useState([]);
+  const [currentRoute, setCurrentRoute] = useState(null);
+  // ...existing code...
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
 
-  // --- Use backend API for trip estimation ---
-  const [tripStats, setTripStats] = useState([]); // [{distance, duration, cost, stopEtas: [{name, eta}]}]
+  // ...existing code...
+  const [tripStats, setTripStats] = useState([]);
 
   useEffect(() => {
     async function fetchAllTripStats() {
@@ -49,7 +49,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
         plannedTrips.map(async (trip) => {
           if (!trip.stops || trip.stops.length < 2) return { distance: 0, duration: 0, cost: 0, stopEtas: [] };
           try {
-            // Use backend endpoint instead of direct Mapbox API call
+            // ...existing code...
             const res = await authFetch(`${API_BASE_URL}/api/mapbox-eta/`, {
               method: 'POST',
               headers: {

@@ -1,7 +1,4 @@
-// Minimal JWT auth helper for the React app.
-// Usage:
-// import { login, logout, getAccessToken, authFetch } from '../services/auth'
-// await login(email, password)
+// ...existing code...
 
 const TOKEN_URL = (path = '') => `http://localhost:8000/api/token/${path}`;
 
@@ -16,7 +13,7 @@ export async function login(email, password) {
     throw new Error(err.detail || 'Invalid credentials');
   }
   const data = await res.json();
-  // data: { access, refresh }
+  // ...existing code...
   localStorage.setItem('accessToken', data.access);
   localStorage.setItem('refreshToken', data.refresh);
   return data;

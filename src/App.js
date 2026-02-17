@@ -34,7 +34,7 @@ function SetGlobalNavigate() {
   return null;
 }
 
-// Helper function to normalize user object and add is_premium flag
+// ...existing code...
 const normalizeUser = (user) => {
   if (!user) return null;
   return {
@@ -49,7 +49,7 @@ function App() {
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
       const normalized = normalizeUser(parsed);
-      // Update localStorage with normalized version
+      // ...existing code...
       localStorage.setItem('currentUser', JSON.stringify(normalized));
       return normalized;
     }
@@ -63,7 +63,7 @@ function App() {
     } else if (savedUser) {
       const parsed = JSON.parse(savedUser);
       const normalized = normalizeUser(parsed);
-      // Always ensure is_premium is set correctly
+      // ...existing code...
       if (currentUser?.subscription_status !== parsed.subscription_status || 
           currentUser?.is_premium !== normalized.is_premium) {
         setCurrentUser(normalized);

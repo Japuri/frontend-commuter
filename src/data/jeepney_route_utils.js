@@ -1,8 +1,8 @@
-// Helper to match a town or route name to a jeepney route color
+// ...existing code...
 import { JEEPNEY_ROUTE_COLORS } from "./jeepney_routes";
 
 export function getJeepneyRouteColor(townName = "", destName = "") {
-  // Try to match by route string or key places
+  // ...existing code...
   const lowerTown = townName.toLowerCase();
   const lowerDest = destName.toLowerCase();
   for (const route of JEEPNEY_ROUTE_COLORS) {
@@ -10,7 +10,7 @@ export function getJeepneyRouteColor(townName = "", destName = "") {
     if (routeStr.includes(lowerTown) && routeStr.includes(lowerDest)) {
       return route;
     }
-    // Also check key places
+    // ...existing code...
     if (
       route.keyPlaces.some(
         (place) =>
