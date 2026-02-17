@@ -34,15 +34,12 @@ function SignIn({ onAuth }) {
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      console.log('Sign-in response:', data);
       if (res.ok) {
         // Store JWT tokens in localStorage
         if (data.token) localStorage.setItem('accessToken', data.token);
         if (data.refresh) localStorage.setItem('refreshToken', data.refresh);
         // Persist currentUser in localStorage for authFetch
         const userObj = { ...data.user, token: data.token, refresh: data.refresh };
-        console.log('User object before onAuth:', userObj);
-        console.log('User subscription_status:', userObj.subscription_status);
         localStorage.setItem('currentUser', JSON.stringify(userObj));
         // Pass the user object directly (not wrapped)
         onAuth(userObj);
@@ -51,7 +48,6 @@ function SignIn({ onAuth }) {
         setError(data.message || 'Sign in failed');
       }
     } catch (err) {
-      console.error('Sign-in error:', err);
       setError(err.message || 'Network error');
     }
   };
