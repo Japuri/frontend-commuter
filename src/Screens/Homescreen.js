@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import TownSelector from "../Components/TownSelector";
 import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
 import JeepneyStopsEstimation from "../Components/JeepneyStopsEstimation";
-import { db, getTownById, logTrip } from "./db";
+import { db, getTownById, logTrip, getUserById, getRecentSelectionsForUser } from "./db";
 // import JeepneyLegend from "../Components/JeepneyLegend";
 import { logTravel } from "../services/travelLogger";
 import {
@@ -160,6 +160,10 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [showPremiumInfo, setShowPremiumInfo] = useState(false);
   const [showUpgradeInfo, setShowUpgradeInfo] = useState(false);
   const [activeFeature, setActiveFeature] = useState(null);
+  const [homeStats, setHomeStats] = useState({
+    profile: null,
+    history: [],
+  });
 
   // Ensure selectedJeepneyRoute is not reset when toggling modes
   useEffect(() => {
@@ -201,6 +205,31 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [estimation, setEstimation] = useState(null);
   const [routeRequested, setRouteRequested] = useState(false);
   const navigate = useNavigate();
+  const [navPendingKey, setNavPendingKey] = useState("");
+
+  const navigateWithTransition = (path, key) => {
+    if (navPendingKey) return;
+
+    setNavPendingKey(key);
+    const doNavigate = () => navigate(path);
+
+    if (typeof document !== "undefined" && document.startViewTransition) {
+      document.startViewTransition(doNavigate);
+    } else {
+      setTimeout(doNavigate, 120);
+    }
+  };
+
+  const withSpinner = (key, label) => (
+    navPendingKey === key ? (
+      <>
+        <span className="btn-inline-spinner" aria-hidden="true" />
+        {label}
+      </>
+    ) : (
+      label
+    )
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.__premiumConfig) {
@@ -242,6 +271,39 @@ function Homescreen({ currentUser, setCurrentUser }) {
         setTowns(db.towns);
       });
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchHomeStats() {
+      if (!currentUser?.id || !currentUser?.token) {
+        setHomeStats({ profile: null, history: [] });
+        return;
+      }
+
+      try {
+        const [profile, history] = await Promise.all([
+          getUserById(currentUser.id, currentUser.token),
+          getRecentSelectionsForUser(currentUser.id, currentUser.token),
+        ]);
+
+        if (cancelled) return;
+        setHomeStats({
+          profile: profile || null,
+          history: Array.isArray(history) ? history : [],
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setHomeStats({ profile: null, history: [] });
+        }
+      }
+    }
+
+    fetchHomeStats();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id, currentUser?.token]);
 
   useEffect(() => {
     if (routeRequested && startTown && endTown && startTown !== endTown) {
@@ -418,6 +480,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
     ) : null;
 
   const loggedIn = !!currentUser;
+  // Keep the old planner dashboard available for later redesign steps.
+  const showLegacyPlanner = false;
 
   const estimationReady = Boolean(estimation) && !estimation?.loading && !estimation?.error;
   const insightsReady = currentUser?.is_premium && estimationReady;
@@ -652,46 +716,134 @@ function Homescreen({ currentUser, setCurrentUser }) {
     );
   };
 
+  const tripsCompleted = homeStats.profile?.total_trips ?? 0;
+  const recentTrips = homeStats.history?.length ?? 0;
+  const latestDestination = homeStats.history?.[0]?.town_name || "No trip yet";
+  const avgPlannedEta = tripStats.length
+    ? Math.round(tripStats.reduce((sum, t) => sum + (t.duration || 0), 0) / tripStats.length)
+    : null;
+
+  const homeStatCards = [
+    {
+      icon: "🧾",
+      value: String(tripsCompleted),
+      label: "Trips Completed",
+    },
+    {
+      icon: "🕘",
+      value: String(recentTrips),
+      label: "Recent Trips Logged",
+    },
+    {
+      icon: "📍",
+      value: latestDestination,
+      label: "Latest Destination",
+    },
+    {
+      icon: "◷",
+      value: avgPlannedEta ? `${avgPlannedEta} min` : "No active plan",
+      label: "Current Average ETA",
+    },
+  ];
+
+  const onboardingSteps = [
+    {
+      step: "STEP 1",
+      icon: "📍",
+      title: "Choose Your Route",
+      copy: "Select your origin and destination from the route list or search bar.",
+    },
+    {
+      step: "STEP 2",
+      icon: "🧭",
+      title: "View on Map",
+      copy: "See the full route on an interactive map with all stops highlighted.",
+    },
+    {
+      step: "STEP 3",
+      icon: "💳",
+      title: "Check Fare & Details",
+      copy: "Get instant fare calculation with student discount applied automatically.",
+    },
+    {
+      step: "STEP 4",
+      icon: "🤖",
+      title: "Ask JeepAI",
+      copy: "Use our AI chatbot for personalized route recommendations and tips.",
+    },
+  ];
+
+  const smartTips = [
+    {
+      icon: "🛡️",
+      title: "Student ID Required",
+      copy: "Always carry your valid student ID for discounted fares.",
+    },
+    {
+      icon: "🗺️",
+      title: "Know Your Route",
+      copy: "Check the route map before boarding to ensure you are on the right jeepney.",
+    },
+    {
+      icon: "⚡",
+      title: "Real-time Updates",
+      copy: "Enable notifications for route changes, fare updates, and traffic alerts.",
+    },
+    {
+      icon: "⭐",
+      title: "Premium Benefits",
+      copy: "Upgrade for ad-free experience, offline maps, and advanced AI features.",
+    },
+  ];
+
   return (
     <>
       <CongratsModal />
-      <div className="jeeproute-page dashboard-shell">
+      <div className="jeeproute-page dashboard-shell home-landing-page">
         <div className="jeeproute-navbar">
-          <div className="navbar-shell">
+          <div className="navbar-shell home-navbar-shell">
             <div className="navbar-brand-block">
-              <div className="navbar-badge" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-truck-front" viewBox="0 0 16 16"> <path d="M5 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0m8 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-6-1a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2zM4 2a1 1 0 0 0-1 1v3.9c0 .625.562 1.092 1.17.994C5.075 7.747 6.792 7.5 8 7.5s2.925.247 3.83.394A1.008 1.008 0 0 0 13 6.9V3a1 1 0 0 0-1-1zm0 1h8v3.9q0 .002 0 0l-.002.004-.005.002h-.004C11.088 6.761 9.299 6.5 8 6.5s-3.088.26-3.99.406h-.003l-.005-.002L4 6.9q0 .002 0 0z"/> <path d="M1 2.5A2.5 2.5 0 0 1 3.5 0h9A2.5 2.5 0 0 1 15 2.5v9c0 .818-.393 1.544-1 2v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V14H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2a2.5 2.5 0 0 1-1-2zM3.5 1A1.5 1.5 0 0 0 2 2.5v9A1.5 1.5 0 0 0 3.5 13h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 12.5 1z"/></svg></div>
+              <div className="navbar-badge" aria-hidden="true">↗</div>
               <div className="navbar-brand-copy">
-                <span className="navbar-brand-title">JeepRoute</span>
-                <span className="navbar-brand-tagline">Pampanga commute lab</span>
+                <span className="navbar-brand-title">
+                  Jeep<span className="home-brand-route">Route</span>
+                </span>
               </div>
             </div>
+
+            <div className="home-navbar-links" aria-label="Primary">
+              <button className="home-nav-link is-active" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Home</button>
+              <button className="home-nav-link" onClick={() => navigateWithTransition("/details", "nav-routes")}>Routes</button>
+              <button className="home-nav-link" onClick={() => navigateWithTransition("/profile", "nav-profile")}>Profile</button>
+            </div>
+
             <div className="header-actions navbar-actions">
               {!loggedIn && (
                 <>
                   <button
                     className="btn-neon-outline"
-                    onClick={() => navigate("/signin")}
+                    onClick={() => navigateWithTransition("/signin", "nav-signin")}
+                    disabled={!!navPendingKey}
                   >
-                    Sign In
+                    {withSpinner("nav-signin", "Sign In")}
                   </button>
                   <button
                     className="btn-neon-fill"
-                    onClick={() => navigate("/signup")}
+                    onClick={() => navigateWithTransition("/signup", "nav-signup")}
+                    disabled={!!navPendingKey}
                   >
-                    Sign Up
+                    {withSpinner("nav-signup", "Get Started")}
                   </button>
                 </>
               )}
               {loggedIn && (
                 <>
-                  <span className="navbar-greeting">
-                    Hi, {(currentUser?.email || "User").split("@")[0]}
-                  </span>
                   <button
                     className="btn-neon-fill"
-                    onClick={() => navigate("/profile")}
+                    onClick={() => navigateWithTransition("/profile", "nav-profile-btn")}
+                    disabled={!!navPendingKey}
                   >
-                    Profile
+                    {withSpinner("nav-profile-btn", "Profile")}
                   </button>
                   <button
                     className="btn-neon-outline"
@@ -708,6 +860,103 @@ function Homescreen({ currentUser, setCurrentUser }) {
             </div>
           </div>
         </div>
+
+        <main className="home-landing-main">
+          <section className="home-hero-section">
+            <div className="home-hero-surface">
+              <div className="home-hero-content">
+                <span className="home-pill">AI-Powered Commute Assistant</span>
+                <h1 className="home-hero-title">
+                  Navigate Your City
+                  <span> Smarter</span>
+                </h1>
+                <p className="home-hero-copy">
+                  Find the best jeepney routes, get real-time fare estimates, and enjoy student discounts - all powered by AI.
+                </p>
+                <div className="home-hero-actions">
+                  <button className="btn-neon-fill" onClick={() => navigateWithTransition("/details", "hero-routes")} disabled={!!navPendingKey}>{withSpinner("hero-routes", "Explore Routes")}</button>
+                  <button className="btn-neon-outline" onClick={() => navigateWithTransition("/signup", "hero-signup")} disabled={!!navPendingKey}>{withSpinner("hero-signup", "Create Account")}</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="home-trust-section home-section-block home-section-block-cool">
+            {loggedIn ? (
+              <>
+                <div className="home-stats-head">
+                  <span className="home-stats-chip">Live Dashboard</span>
+                  <h2>Your Commute Snapshot</h2>
+                  <p>View your recent travel history and live planner calculations.</p>
+                </div>
+                <div className="home-stats-grid">
+                  {homeStatCards.map((card) => (
+                    <article className="home-stat-card" key={card.label}>
+                      <div className="home-stat-icon">{card.icon}</div>
+                      <strong>{card.value}</strong>
+                      <span>{card.label}</span>
+                    </article>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="home-stats-guest" role="status" aria-live="polite">
+                <div className="home-stats-guest-badge">Personalized Insights</div>
+                <h3>Sign up or Log in to see your statistics</h3>
+                <p>
+                  Track completed trips, recent destinations, and your average travel time in one place.
+                </p>
+                <div className="home-stats-guest-actions">
+                  <button className="btn-neon-fill" onClick={() => navigateWithTransition("/signin", "guest-signin")} disabled={!!navPendingKey}>{withSpinner("guest-signin", "Log In")}</button>
+                  <button className="btn-neon-outline" onClick={() => navigateWithTransition("/signup", "guest-signup")} disabled={!!navPendingKey}>{withSpinner("guest-signup", "Sign Up")}</button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="home-guide-section home-section-block home-section-block-warm">
+            <div className="home-guide-head">
+              <span className="home-guide-chip">Easy as 1-2-3-4</span>
+              <h2>How to Use JeepRoute</h2>
+              <p>Get started in seconds with our intuitive interface.</p>
+            </div>
+
+            <div className="home-guide-grid">
+              {onboardingSteps.map((item) => (
+                <article className="home-guide-card" key={item.step}>
+                  <div className="home-guide-meta">
+                    <span className="home-guide-icon">{item.icon}</span>
+                    <span className="home-guide-step">{item.step}</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="home-tips-section home-section-block home-section-block-cool">
+            <div className="home-guide-head">
+              <span className="home-guide-chip">Guidelines</span>
+              <h2>Tips for Smart Commuting</h2>
+              <p>Follow these guidelines for the best experience.</p>
+            </div>
+
+            <div className="home-tips-grid">
+              {smartTips.map((item) => (
+                <article className="home-tip-card" key={item.title}>
+                  <span className="home-tip-icon">{item.icon}</span>
+                  <div className="home-tip-copy">
+                    <h3>{item.title}</h3>
+                    <p>{item.copy}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </main>
+
+        {showLegacyPlanner && (
         <div className="jeeprout-layout">
           <div className="jeeproute-grid-container">
             {/* Top Left: Jeep Routes */}
@@ -1094,6 +1343,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
             </div>
           </div>
         </div>
+        )}
       </div>
     </>
   );

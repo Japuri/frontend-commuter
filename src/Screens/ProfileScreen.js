@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Spinner from "../Components/Spinner";
 import { logout as authLogout } from "../services/auth";
 import {
   getRecentSelectionsForUser,
@@ -30,7 +31,7 @@ export default function ProfileScreen({ currentUser, token }) {
   const [error, setError] = useState(null);
   const loggedIn = !!currentUser;
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     // Redirect to sign-in if not authenticated
     if (!currentUser || !token) {
       navigate('/signin', { state: { redirectTo: '/profile' } });
@@ -61,11 +62,11 @@ export default function ProfileScreen({ currentUser, token }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, token, navigate]);
 
   useEffect(() => {
     fetchData();
-  }, [currentUser, token, location.key]);
+  }, [fetchData, location.key]);
 
   // Refetch data when the page becomes visible (user navigates back)
   useEffect(() => {
@@ -76,9 +77,15 @@ export default function ProfileScreen({ currentUser, token }) {
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [loading]);
+  }, [loading, fetchData]);
 
-  if (loading) return <div className="profile-loading">Loading profile...</div>;
+  if (loading) {
+    return (
+      <div className="profile-loading-state">
+        <Spinner size={52} color="#1b63d1" text="Loading profile..." />
+      </div>
+    );
+  }
   if (error) return <div className="profile-error">{error}</div>;
   if (!profile) return <div className="profile-error">No profile data.</div>;
 
