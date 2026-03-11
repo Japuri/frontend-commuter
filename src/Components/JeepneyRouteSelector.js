@@ -34,7 +34,7 @@ export default function JeepneyRouteSelector({ onRouteSelect, selectedRoute }) {
               onMouseEnter={() => setPreviewRoute(route)}
               onFocus={() => setPreviewRoute(route)}
               onClick={() => handleSelectRoute(route)}
-              aria-selected={isSelected}
+              aria-pressed={isSelected}
             >
               <span
                 className="wallet-route-pill-chip"

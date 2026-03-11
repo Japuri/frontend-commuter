@@ -115,16 +115,6 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
     }
   };
 
-  const handleOpenColoredTripPlanner = () => {
-    setShowColoredTripPlanner(true);
-  };
-
-  const handleColoredTripPlannerMouseLeave = () => {
-    if (isColoredTripPlannerPinned) return;
-    setShowColoredTripPlanner(false);
-    setShowJeepneyStops(false);
-  };
-
   const handleCloseColoredTripPlanner = () => {
     setShowColoredTripPlanner(false);
     setShowJeepneyStops(false);
@@ -1094,8 +1084,6 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
 
                   <div
                     className={`colored-trip-wallet${showColoredTripPlanner ? " is-open" : ""}${isColoredTripPlannerPinned ? " is-pinned" : ""}`}
-                    onMouseEnter={handleOpenColoredTripPlanner}
-                    onMouseLeave={handleColoredTripPlannerMouseLeave}
                   >
                     <button
                       type="button"
