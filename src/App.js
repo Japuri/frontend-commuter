@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Homescreen from './Screens/Homescreen';
-import DetailScreen from './Screens/DetailScreen';
 import LoginScreen from './Screens/LoginScreen';
 import SignIn from './Screens/SignIn';
 import SignUp from './Screens/SignUp';
@@ -56,7 +55,7 @@ function App() {
         <Route
           path="/" element={<Homescreen currentUser={currentUser} setCurrentUser={setCurrentUser} />} />
         <Route
-          path="/details" element={<DetailScreen currentUser={currentUser} setCurrentUser={setCurrentUser} />} />
+          path="/details" element={<Homescreen currentUser={currentUser} setCurrentUser={setCurrentUser} initialView="routes" />} />
         <Route
           path="/login" element={<LoginScreen setCurrentUser={setCurrentUser}/>} />
         <Route

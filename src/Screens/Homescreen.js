@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import Spinner from "../Components/Spinner";
-import { useNavigate } from "react-router-dom";
-import TownSelector from "../Components/TownSelector";
 import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
 import JeepneyStopsEstimation from "../Components/JeepneyStopsEstimation";
+import { useNavigate } from "react-router-dom";
 import { db, getTownById, logTrip, getUserById, getRecentSelectionsForUser } from "./db";
 // import JeepneyLegend from "../Components/JeepneyLegend";
 import { logTravel } from "../services/travelLogger";
@@ -19,7 +18,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 // import { JEEPNEY_ROUTE_COLORS } from '../data/jeepney_routes';
 
-function Homescreen({ currentUser, setCurrentUser }) {
+function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
   const getReadableRouteColor = (hex) => {
     const normalized = String(hex || "").replace("#", "");
     if (![3, 6].includes(normalized.length)) return "#1b253a";
@@ -99,6 +98,39 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const handleRemoveTrip = (idx) => {
     setPlannedTrips(plannedTrips.filter((_, i) => i !== idx));
   };
+
+  const handleJeepneyRouteSelect = (route) => {
+    setCurrentRoute(route);
+    setSelectedJeepneyRoute(route);
+    setShowJeepneyStops(false);
+    setShowColoredTripPlanner(true);
+  };
+
+  const handleToggleColoredTripPlanner = () => {
+    const nextOpen = !showColoredTripPlanner;
+    setShowColoredTripPlanner(nextOpen);
+    setIsColoredTripPlannerPinned(nextOpen);
+    if (!nextOpen) {
+      setShowJeepneyStops(false);
+    }
+  };
+
+  const handleOpenColoredTripPlanner = () => {
+    setShowColoredTripPlanner(true);
+  };
+
+  const handleColoredTripPlannerMouseLeave = () => {
+    if (isColoredTripPlannerPinned) return;
+    setShowColoredTripPlanner(false);
+    setShowJeepneyStops(false);
+  };
+
+  const handleCloseColoredTripPlanner = () => {
+    setShowColoredTripPlanner(false);
+    setShowJeepneyStops(false);
+    setIsColoredTripPlannerPinned(false);
+  };
+
   const handleActivateAIMode = async () => {
     if (!estimation || !currentUser?.is_premium) return;
     setAiLoading(true);
@@ -152,7 +184,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
   }, [startTown, endTown]);
   // Jeepney route selection state
   const [selectedJeepneyRoute, setSelectedJeepneyRoute] = useState(null);
-  const [useJeepneyMode, setUseJeepneyMode] = useState(true);
+  const [showColoredTripPlanner, setShowColoredTripPlanner] = useState(false);
+  const [isColoredTripPlannerPinned, setIsColoredTripPlannerPinned] = useState(false);
   // Congratulatory popup state
   const [showCongrats, setShowCongrats] = useState(false);
   // Show stops estimation after planning jeepney route
@@ -164,14 +197,6 @@ function Homescreen({ currentUser, setCurrentUser }) {
     profile: null,
     history: [],
   });
-
-  // Ensure selectedJeepneyRoute is not reset when toggling modes
-  useEffect(() => {
-    if (!useJeepneyMode) {
-      setShowJeepneyStops(false);
-      setSelectedJeepneyRoute(null); // Reset selected jeepney route when switching to town-to-town
-    }
-  }, [useJeepneyMode]);
 
   // Persist town selections in sessionStorage
   const handleSetStartTown = (val) => {
@@ -206,6 +231,98 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [routeRequested, setRouteRequested] = useState(false);
   const navigate = useNavigate();
   const [navPendingKey, setNavPendingKey] = useState("");
+  const [activeView, setActiveView] = useState(initialView);
+  const [openTownPicker, setOpenTownPicker] = useState(null);
+  const [townSearchTerm, setTownSearchTerm] = useState("");
+  const [showAllWalletTrips, setShowAllWalletTrips] = useState(false);
+  const [expandedTripStops, setExpandedTripStops] = useState({});
+
+  useEffect(() => {
+    setActiveView(initialView);
+  }, [initialView]);
+
+  const selectedStartTown =
+    towns.find((town) => String(town.id) === String(startTown)) ||
+    getTownById(startTown);
+  const selectedEndTown =
+    towns.find((town) => String(town.id) === String(endTown)) ||
+    getTownById(endTown);
+  const canPlanTownRoute = Boolean(
+    startTown && endTown && String(startTown) !== String(endTown)
+  );
+  const filteredTowns = towns.filter((town) =>
+    String(town.name || "")
+      .toLowerCase()
+      .includes(townSearchTerm.trim().toLowerCase())
+  );
+
+  const openPlannerTownPicker = (field) => {
+    setOpenTownPicker((currentField) =>
+      currentField === field ? null : field
+    );
+    setTownSearchTerm("");
+  };
+
+  const handlePlannerTownPick = async (field, townId) => {
+    if (field === "start") {
+      handleSetStartTown(townId);
+    } else {
+      await handleSetEndTown(townId);
+    }
+    setOpenTownPicker(null);
+    setTownSearchTerm("");
+  };
+
+  const handlePlanTownRoute = () => {
+    if (!currentUser) {
+      navigate("/signin");
+      return;
+    }
+
+    if (currentUser?.id) {
+      let townName;
+      try {
+        const byId = towns.find((town) => String(town.id) === String(endTown));
+        townName = byId?.name;
+        if (!townName) {
+          const fallback = getTownById(endTown);
+          townName = fallback?.name;
+        }
+      } catch {}
+
+      try {
+        logTravel({
+          user_id: currentUser.id,
+          town_id: endTown,
+          town_name: townName,
+          selected_at: new Date().toISOString(),
+        });
+      } catch {}
+    }
+
+    setOpenTownPicker(null);
+    setRouteRequested(true);
+  };
+
+  const switchView = (nextView) => {
+    if (nextView === activeView) {
+      if (nextView === "home") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
+    const updateView = () => {
+      setActiveView(nextView);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    if (typeof document !== "undefined" && document.startViewTransition) {
+      document.startViewTransition(updateView);
+    } else {
+      updateView();
+    }
+  };
 
   const navigateWithTransition = (path, key) => {
     if (navPendingKey) return;
@@ -481,7 +598,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
 
   const loggedIn = !!currentUser;
   // Keep the old planner dashboard available for later redesign steps.
-  const showLegacyPlanner = false;
+  const showLegacyPlanner = activeView === "routes";
 
   const estimationReady = Boolean(estimation) && !estimation?.loading && !estimation?.error;
   const insightsReady = currentUser?.is_premium && estimationReady;
@@ -722,6 +839,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const avgPlannedEta = tripStats.length
     ? Math.round(tripStats.reduce((sum, t) => sum + (t.duration || 0), 0) / tripStats.length)
     : null;
+  const selectedColoredRoute = currentRoute || selectedJeepneyRoute;
+  const visibleWalletTrips = showAllWalletTrips ? plannedTrips : plannedTrips.slice(0, 2);
 
   const homeStatCards = [
     {
@@ -812,8 +931,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
             </div>
 
             <div className="home-navbar-links" aria-label="Primary">
-              <button className="home-nav-link is-active" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Home</button>
-              <button className="home-nav-link" onClick={() => navigateWithTransition("/details", "nav-routes")}>Routes</button>
+              <button className={`home-nav-link${activeView === "home" ? " is-active" : ""}`} onClick={() => switchView("home")}>Home</button>
+              <button className={`home-nav-link${activeView === "routes" ? " is-active" : ""}`} onClick={() => switchView("routes")}>Routes</button>
               <button className="home-nav-link" onClick={() => navigateWithTransition("/profile", "nav-profile")}>Profile</button>
             </div>
 
@@ -861,6 +980,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
           </div>
         </div>
 
+        {activeView === "home" && (
         <main className="home-landing-main">
           <section className="home-hero-section">
             <div className="home-hero-surface">
@@ -874,7 +994,7 @@ function Homescreen({ currentUser, setCurrentUser }) {
                   Find the best jeepney routes, get real-time fare estimates, and enjoy student discounts - all powered by AI.
                 </p>
                 <div className="home-hero-actions">
-                  <button className="btn-neon-fill" onClick={() => navigateWithTransition("/details", "hero-routes")} disabled={!!navPendingKey}>{withSpinner("hero-routes", "Explore Routes")}</button>
+                  <button className="btn-neon-fill" onClick={() => switchView("routes")}>Explore Routes</button>
                   <button className="btn-neon-outline" onClick={() => navigateWithTransition("/signup", "hero-signup")} disabled={!!navPendingKey}>{withSpinner("hero-signup", "Create Account")}</button>
                 </div>
               </div>
@@ -955,182 +1075,398 @@ function Homescreen({ currentUser, setCurrentUser }) {
             </div>
           </section>
         </main>
+        )}
 
         {showLegacyPlanner && (
         <div className="jeeprout-layout">
-          <div className="jeeproute-grid-container">
-            {/* Top Left: Jeep Routes */}
-            <div className="grid-jeep-routes">
-              <div className="sidebar">
-                <div className="plan-card free">
-                  <div className="plan-card-title">
-                    Smart Jeepney Planning for Pampanga Students
-                  </div>
-                  {/* Mode Toggle */}
-                  <div style={{ display: 'flex', gap: 'clamp(6px, 2vw, 10px)', marginBottom: 'clamp(8px, 2vw, 16px)' }}>
-                    <button
-                      className={useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
-                      style={{ flex: 1, fontSize: 'clamp(10px, 2vw, 13px)', padding: 'clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)' }}
-                      onClick={() => setUseJeepneyMode(true)}
-                    >
-                      🚍 Jeepney Routes
-                    </button>
-                    <button
-                      className={!useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
-                      style={{ flex: 1, fontSize: 'clamp(10px, 2vw, 13px)', padding: 'clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)' }}
-                      onClick={() => setUseJeepneyMode(false)}
-                    >
-                      📍 Town to Town
-                    </button>
+          <div className="jeeproute-grid-container route-planner-grid">
+            <div className="grid-jeep-routes route-planner-shell">
+              <div className="route-planner-card">
+                <div className="route-planner-head">
+                  <div className="route-planner-intro">
+                    <span className="route-planner-eyebrow">Legacy Planner</span>
+                    <h2>Plan your town-to-town trip</h2>
+                    <p>
+                      Pick a starting town and destination. The town list is still
+                      powered by the existing towns API.
+                    </p>
                   </div>
 
-                  {useJeepneyMode ? (
-                    <div className="jeeproute-select-block">
-                      <JeepneyRouteSelector
-                        onRouteSelect={(route) => {
-                          setCurrentRoute(route);
-                          setSelectedJeepneyRoute(route);
-                          setShowJeepneyStops(false); // Reset stops view on new selection
-                        }}
-                        selectedRoute={currentRoute || selectedJeepneyRoute}
-                      />
-                      
-                      <button
-                        className="btn-neon-fill"
-                        style={{ width: '100%', marginTop: 12, marginBottom: 12, fontSize: 14 }}
-                        onClick={handleAddTrip}
-                        disabled={!currentRoute}
+                  <div
+                    className={`colored-trip-wallet${showColoredTripPlanner ? " is-open" : ""}${isColoredTripPlannerPinned ? " is-pinned" : ""}`}
+                    onMouseEnter={handleOpenColoredTripPlanner}
+                    onMouseLeave={handleColoredTripPlannerMouseLeave}
+                  >
+                    <button
+                      type="button"
+                      className={`colored-trip-planner-fab${
+                        showColoredTripPlanner ? " is-open" : ""
+                      }`}
+                      onClick={handleToggleColoredTripPlanner}
+                      aria-expanded={showColoredTripPlanner}
+                      aria-controls="colored-trip-planner-panel"
+                      aria-pressed={isColoredTripPlannerPinned}
+                    >
+                      <span className="colored-trip-planner-fab-icon" aria-hidden="true">
+                        ₱
+                      </span>
+                      <span className="colored-trip-planner-fab-copy">
+                        <strong>Trip Wallet</strong>
+                        <small>Hover for color routes, totals, and stop loading</small>
+                      </span>
+                      <span className="colored-trip-planner-fab-summary" aria-hidden="true">
+                        <span>{plannedTrips.length} trip{plannedTrips.length === 1 ? "" : "s"}</span>
+                        <strong>₱{totalCost}</strong>
+                      </span>
+                    </button>
+
+                    {showColoredTripPlanner && (
+                      <section
+                        className="colored-trip-planner-panel"
+                        id="colored-trip-planner-panel"
+                        aria-label="Colored trip planner"
                       >
-                        + Add Jeepney Trip
-                      </button>
-                      
-                    </div>
-                  ) : (
-                    <div className="jeeproute-select-block">
-                      <div className="plan-header">Select Route</div>
-                      <TownSelector
-                        towns={towns}
-                        startTown={startTown}
-                        endTown={endTown}
-                        setStartTown={handleSetStartTown}
-                        setEndTown={handleSetEndTown}
-                        layout="start"
-                      />
-                      <TownSelector
-                        towns={towns}
-                        startTown={startTown}
-                        endTown={endTown}
-                        setStartTown={setStartTown}
-                        setEndTown={handleSetEndTown}
-                        layout="end"
-                      />
-                    </div>
-                  )}
-                  {!useJeepneyMode && (
-                    <div className="jeeproute-actions-row">
-                      <button
-                        className="btn-neon-fill"
-                        disabled={!startTown || !endTown || startTown === endTown}
-                        onClick={() => {
-                          if (!currentUser) {
-                            navigate("/signin");
-                            return;
-                          }
-                          // Only log if user is authenticated
-                          if (currentUser?.id) {
-                            let townName = undefined;
-                            try {
-                              const byId = towns.find(
-                                (t) => String(t.id) === String(endTown)
+                        <div className="colored-trip-planner-header">
+                          <div>
+                            <p className="colored-trip-planner-kicker">Wallet helper</p>
+                            <h3>Stack jeepney legs without leaving the planner</h3>
+                            <p>
+                              Hover to calculate route combinations, keep the color coding,
+                              and load the chosen jeepney stops without taking over the screen.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="colored-trip-planner-close"
+                            onClick={handleCloseColoredTripPlanner}
+                            aria-label="Close colored trip planner"
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        <JeepneyRouteSelector
+                          onRouteSelect={handleJeepneyRouteSelect}
+                          selectedRoute={selectedColoredRoute}
+                        />
+
+                        <div className="colored-trip-planner-actions">
+                          <button
+                            type="button"
+                            className="btn-neon-fill colored-trip-action"
+                            onClick={handleAddTrip}
+                            disabled={!currentRoute}
+                          >
+                            + Add Jeepney Trip
+                          </button>
+                        </div>
+
+                        <div className="colored-trip-planner-metrics">
+                          <article className="colored-trip-metric-card">
+                            <span>Total Distance</span>
+                            <strong>{totalDistance} km</strong>
+                          </article>
+                          <article className="colored-trip-metric-card">
+                            <span>Total Time</span>
+                            <strong>{totalTime} min</strong>
+                          </article>
+                          <article className="colored-trip-metric-card">
+                            <span>Total Cost</span>
+                            <strong>₱{totalCost}</strong>
+                          </article>
+                        </div>
+
+                        {plannedTrips.length > 0 ? (
+                          <div className="colored-trip-planner-stack">
+                            {visibleWalletTrips.map((trip, idx) => {
+                              const tripIndex = idx;
+                              const stopEtas = tripStats[tripIndex]?.stopEtas || [];
+
+                              return (
+                              <article
+                                key={`${trip.color}-${trip.route}-${idx}`}
+                                className="colored-trip-card"
+                                style={{ "--colored-trip-accent": trip.hex }}
+                              >
+                                <div className="colored-trip-card-head">
+                                  <div>
+                                    <p
+                                      className="colored-trip-card-title"
+                                      style={{ color: getReadableRouteColor(trip.hex) }}
+                                    >
+                                      {trip.color} Route
+                                    </p>
+                                    <p className="colored-trip-card-copy">{trip.route}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="colored-trip-card-remove"
+                                    onClick={() => handleRemoveTrip(tripIndex)}
+                                    aria-label={`Remove ${trip.color} route`}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+
+                                <div className="colored-trip-card-stats">
+                                  <span>
+                                    {tripStats[tripIndex]?.distance
+                                      ? `${tripStats[tripIndex].distance.toFixed(2)} km`
+                                      : "0.00 km"}
+                                  </span>
+                                  <span>{tripStats[tripIndex]?.duration || 0} min</span>
+                                  <span>₱{tripStats[tripIndex]?.cost || 0}</span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  className="colored-trip-load-stops-btn"
+                                  onClick={() =>
+                                    setExpandedTripStops((prev) => ({
+                                      ...prev,
+                                      [tripIndex]: !prev[tripIndex],
+                                    }))
+                                  }
+                                >
+                                  {expandedTripStops[tripIndex] ? 'Hide Stops ▲' : 'Load Chosen Stops ▼'}
+                                </button>
+
+                                {expandedTripStops[tripIndex] && stopEtas.length > 0 && (
+                                  <div className="colored-trip-stop-list">
+                                    {stopEtas.map((stop, stopIndex) => (
+                                      <div
+                                        key={`${trip.color}-${stop.name}-${stopIndex}`}
+                                        className="colored-trip-stop-row"
+                                      >
+                                        <span
+                                          className="colored-trip-stop-order"
+                                          style={{ color: getReadableRouteColor(trip.hex) }}
+                                        >
+                                          {stopIndex + 1}
+                                        </span>
+                                        <span className="colored-trip-stop-name">
+                                          {stop.name}
+                                        </span>
+                                        <span className="colored-trip-stop-eta">
+                                          ETA {stop.eta} min
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </article>
                               );
-                              townName = byId?.name;
-                              if (!townName) {
-                                const fallback = getTownById(endTown);
-                                townName = fallback?.name;
-                              }
-                            } catch {}
-                            try {
-                              logTravel({
-                                user_id: currentUser.id,
-                                town_id: endTown,
-                                town_name: townName,
-                                selected_at: new Date().toISOString(),
-                              });
-                            } catch {}
-                          }
-                          setRouteRequested(true);
-                        }}
+                            })}
+                          </div>
+                        ) : (
+                          <div className="colored-trip-planner-empty">
+                            Pick a color-coded route and add it to your trip stack.
+                          </div>
+                        )}
+
+                        {plannedTrips.length > 2 && (
+                          <button
+                            type="button"
+                            className="colored-trip-stack-toggle"
+                            onClick={() => setShowAllWalletTrips((prev) => !prev)}
+                          >
+                            {showAllWalletTrips
+                              ? "Show fewer saved trips"
+                              : `Show all saved trips (${plannedTrips.length})`}
+                          </button>
+                        )}
+
+                        {showJeepneyStops &&
+                          selectedJeepneyRoute &&
+                          selectedJeepneyRoute.stops &&
+                          selectedJeepneyRoute.stops.length >= 2 && (
+                            <JeepneyStopsEstimation
+                              key={selectedJeepneyRoute.color || selectedJeepneyRoute.route}
+                              route={selectedJeepneyRoute}
+                              onBack={() => setShowJeepneyStops(false)}
+                            />
+                          )}
+                      </section>
+                    )}
+                  </div>
+                </div>
+
+                <div className="route-town-boxes">
+                  <button
+                    type="button"
+                    className={`route-town-box${
+                      openTownPicker === "start" ? " active" : ""
+                    }`}
+                    onClick={() => openPlannerTownPicker("start")}
+                    aria-expanded={openTownPicker === "start"}
+                  >
+                    <span className="route-town-box-label">Start town</span>
+                    <span
+                      className={`route-town-box-value${
+                        selectedStartTown ? "" : " placeholder"
+                      }`}
+                    >
+                      {selectedStartTown?.name || "Choose your origin"}
+                    </span>
+                    <span className="route-town-box-meta">
+                      {towns.length > 0
+                        ? "Tap to browse available towns"
+                        : "Loading towns..."}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`route-town-box${
+                      openTownPicker === "end" ? " active" : ""
+                    }`}
+                    onClick={() => openPlannerTownPicker("end")}
+                    aria-expanded={openTownPicker === "end"}
+                  >
+                    <span className="route-town-box-label">End town</span>
+                    <span
+                      className={`route-town-box-value${
+                        selectedEndTown ? "" : " placeholder"
+                      }`}
+                    >
+                      {selectedEndTown?.name || "Choose your destination"}
+                    </span>
+                    <span className="route-town-box-meta">
+                      {towns.length > 0
+                        ? "Tap to browse available towns"
+                        : "Loading towns..."}
+                    </span>
+                  </button>
+                </div>
+
+                {openTownPicker && (
+                  <div
+                    className="route-town-picker"
+                    role="dialog"
+                    aria-modal="false"
+                    aria-label={
+                      openTownPicker === "start"
+                        ? "Select start town"
+                        : "Select end town"
+                    }
+                  >
+                    <div className="route-town-picker-header">
+                      <div>
+                        <p className="route-town-picker-kicker">Town picker</p>
+                        <h3>
+                          {openTownPicker === "start"
+                            ? "Select your starting town"
+                            : "Select your destination town"}
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        className="route-town-picker-close"
+                        onClick={() => setOpenTownPicker(null)}
+                        aria-label="Close town picker"
                       >
-                        Plan Route
+                        ×
                       </button>
                     </div>
-                  )}
-                </div>
-                {estimation?.loading && (
-                  <div className="plan-card free" style={{ alignItems: "center" }}>
-                    <Spinner size={52} color="#00d4ff" text="Calculating estimation..." />
+
+                    <label className="route-town-search">
+                      <span>Search towns</span>
+                      <input
+                        type="text"
+                        value={townSearchTerm}
+                        onChange={(event) => setTownSearchTerm(event.target.value)}
+                        placeholder="Search by town name"
+                      />
+                    </label>
+
+                    <div className="route-town-list">
+                      {filteredTowns.length > 0 ? (
+                        filteredTowns.map((town) => {
+                          const isSelected =
+                            openTownPicker === "start"
+                              ? String(startTown) === String(town.id)
+                              : String(endTown) === String(town.id);
+
+                          return (
+                            <button
+                              type="button"
+                              key={town.id}
+                              className={`route-town-option${
+                                isSelected ? " selected" : ""
+                              }`}
+                              onClick={() =>
+                                handlePlannerTownPick(openTownPicker, town.id)
+                              }
+                            >
+                              <span className="route-town-option-name">
+                                {town.name}
+                              </span>
+                              <span className="route-town-option-meta">
+                                {isSelected ? "Selected" : "Tap to select"}
+                              </span>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="route-town-empty">
+                          No towns match your search.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
+
+                <div className="route-planner-footer">
+                  <p className="route-planner-summary">
+                    {canPlanTownRoute
+                      ? `${selectedStartTown?.name} to ${selectedEndTown?.name}`
+                      : startTown && endTown && String(startTown) === String(endTown)
+                        ? "Pick two different towns to continue."
+                        : "Select a start and end town to enable route planning."}
+                  </p>
+                  <button
+                    className="btn-neon-fill route-plan-button"
+                    disabled={!canPlanTownRoute}
+                    onClick={handlePlanTownRoute}
+                  >
+                    Plan Route
+                  </button>
+                </div>
+
+                {estimation?.loading && (
+                  <div className="route-planner-loading">
+                    <Spinner
+                      size={48}
+                      color="#00d4ff"
+                      text="Calculating estimation..."
+                    />
+                  </div>
+                )}
+
+                <section className="route-map-panel">
+                  <div className="route-map-panel-header">
+                    <div>
+                      <p className="route-map-panel-kicker">Map section</p>
+                      <h3>Mapbox route preview</h3>
+                    </div>
+                    <p className="route-map-panel-copy">
+                      {routeRequested && canPlanTownRoute
+                        ? `${selectedStartTown?.name || "Start"} to ${
+                            selectedEndTown?.name || "Destination"
+                          }`
+                        : "The map appears here after you plan a route."}
+                    </p>
+                  </div>
+                  <div className="route-map-panel-body">
+                    <Mapbox3DMap
+                      estimation={estimation}
+                      selectedJeepneyRoute={null}
+                      key={`${startTown}-${endTown}-${routeRequested}`}
+                    />
+                  </div>
+                </section>
               </div>
             </div>
-
-            {/* Top Right: Map (only show in Town to Town mode) */}
-            {!useJeepneyMode && (
-              <div className="grid-map">
-                <Mapbox3DMap 
-                  estimation={estimation} 
-                  selectedJeepneyRoute={null}
-                  key={String(useJeepneyMode) + '-' + String(startTown) + '-' + String(endTown) + '-' + String(routeRequested)}
-                />
-              </div>
-            )}
-            {/* Show trip summary in grid-map area for Jeepney Routes mode */}
-            {useJeepneyMode && (
-              <div className="grid-map">
-                {plannedTrips.length > 0 && (
-                  <div style={{
-                    background: '#eaf6ff',
-                    borderRadius: 10,
-                    padding: '16px 18px',
-                    marginBottom: 18,
-                    boxShadow: '0 2px 8px #e0e8f7',
-                  }}>
-                    <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>Trip Summary</div>
-                    <div style={{ display: 'flex', gap: 18, fontSize: 15, marginBottom: 12 }}>
-                      <div><strong>Total Distance:</strong> {totalDistance} km</div>
-                      <div><strong>Total Time:</strong> {totalTime} min</div>
-                      <div><strong>Total Cost:</strong> ₱{totalCost}</div>
-                    </div>
-                    {/* Show stop-by-stop ETAs for each trip */}
-                    {plannedTrips.map((trip, idx) => (
-                      <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px', border: `2px solid ${trip.hex}`, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <div style={{ fontWeight: 600, color: getReadableRouteColor(trip.hex), fontSize: 15, textShadow: '0 0 2.5px rgba(0, 0, 0, 0.35)' }}>{trip.color} Route: {trip.route}</div>
-                          <button onClick={() => handleRemoveTrip(idx)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 18, padding: '0 4px', marginTop: -16, marginRight: -10 }}>✕</button>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {tripStats[idx]?.stopEtas?.map((stop, sidx) => (
-                            <div key={sidx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <span className="trip-stop-index" style={{ fontWeight: 600, color: getReadableRouteColor(trip.hex), minWidth: 60, textShadow: '0 0 2.5px rgba(0, 0, 0, 0.35)' }}>{sidx + 1}{['st','nd','rd'][sidx] || 'th'} stop</span>
-                              <span style={{ flex: 1, color: '#2a3441', fontWeight: 500 }}>{stop.name}</span>
-                              <span style={{ color: '#7f94a8', fontSize: 13 }}>ETA: {stop.eta} min</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {/* Show jeepney stops estimation after planning in jeepney mode */}
-                {showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
-                  <JeepneyStopsEstimation 
-                    key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
-                    route={selectedJeepneyRoute} 
-                    onBack={() => setShowJeepneyStops(false)}
-                  />
-                )}
-              </div>
-            )}
 
             {/* Bottom: Features Container */}
             <div className="grid-features">
@@ -1350,7 +1686,11 @@ function Homescreen({ currentUser, setCurrentUser }) {
 }
 
 // Mapbox 3D Map Component
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || 'pk.eyJ1IjoiamFwdXJpIiwiYSI6ImNtampoeW10czIxMW8zZHF4dTE2cGJ5bHMifQ.vcz9vRGxvmuiRYQlO8iaXg';
+const envMapboxToken = process.env.REACT_APP_MAPBOX_TOKEN;
+const MAPBOX_TOKEN =
+  envMapboxToken && envMapboxToken !== "your_token_here"
+    ? envMapboxToken
+    : "pk.eyJ1IjoiamFwdXJpIiwiYSI6ImNtampoeW10czIxMW8zZHF4dTE2cGJ5bHMifQ.vcz9vRGxvmuiRYQlO8iaXg";
 
 function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
   const mapContainer = useRef(null);

@@ -177,6 +177,10 @@ body {
   overflow: visible;
 }
 
+.route-planner-grid {
+  grid-template-rows: auto auto;
+}
+
 @media (max-width: 1279px) {
   .jeeproute-grid-container {
     grid-template-columns: minmax(180px, 1.15fr) minmax(260px, 1.8fr) minmax(140px, 0.9fr);
@@ -233,6 +237,922 @@ body {
   justify-content: flex-start;
 }
 
+.route-planner-shell {
+  grid-column: 1 / 4;
+  max-height: none;
+  min-height: 0;
+  height: auto;
+}
+
+.route-planner-card {
+  background: linear-gradient(160deg, #ffffff 0%, #f6f8fc 52%, #eef5ff 100%);
+  border: 1px solid rgba(152, 167, 196, 0.24);
+  border-radius: clamp(20px, 2.8vw, 28px);
+  box-shadow: 0 30px 60px rgba(21, 34, 54, 0.08);
+  padding: clamp(18px, 3vw, 30px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 2.4vw, 24px);
+  position: relative;
+  overflow: visible;
+}
+
+.route-planner-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.route-planner-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 760px;
+}
+
+.colored-trip-wallet {
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.colored-trip-planner-fab {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 320px;
+  padding: 12px 16px;
+  border: 1px solid rgba(240, 120, 24, 0.22);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 248, 239, 0.94) 0%, rgba(255, 255, 255, 0.98) 100%);
+  box-shadow: 0 18px 28px rgba(240, 120, 24, 0.14);
+  text-align: left;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.colored-trip-planner-fab:hover,
+.colored-trip-planner-fab:focus-visible,
+.colored-trip-planner-fab.is-open {
+  transform: translateY(-2px);
+  border-color: rgba(240, 120, 24, 0.42);
+  box-shadow: 0 22px 34px rgba(240, 120, 24, 0.18);
+}
+
+.colored-trip-planner-fab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #ff9d2f 0%, #f07818 100%);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 20px rgba(240, 120, 24, 0.26);
+}
+
+.colored-trip-planner-fab-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.colored-trip-planner-fab-copy strong {
+  font-size: 0.95rem;
+  color: #15243b;
+}
+
+.colored-trip-planner-fab-copy small {
+  color: #6f7f93;
+  font-size: 0.78rem;
+}
+
+.colored-trip-planner-fab-summary {
+  margin-left: auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(240, 120, 24, 0.18);
+  color: #6f7f93;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.colored-trip-planner-fab-summary strong {
+  color: #15243b;
+  font-size: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.colored-trip-planner-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  width: min(520px, calc(100vw - 48px));
+  max-height: min(84vh, 920px);
+  overflow-y: auto;
+  border: 1px solid rgba(240, 120, 24, 0.18);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.98), rgba(255, 255, 255, 0.99));
+  padding: clamp(16px, 2.4vw, 22px);
+  box-shadow: 0 28px 48px rgba(34, 22, 12, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 15;
+}
+
+.colored-trip-planner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.colored-trip-planner-kicker {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f07818;
+}
+
+.colored-trip-planner-header h3 {
+  margin: 0;
+  color: #15243b;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+}
+
+.colored-trip-planner-header p {
+  margin: 6px 0 0;
+  max-width: 720px;
+  color: #6b788b;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.colored-trip-planner-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(240, 120, 24, 0.12);
+  color: #e06a0f;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.colored-trip-planner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.wallet-route-selector {
+  margin-top: 10px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(240, 120, 24, 0.14);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 248, 240, 0.92), rgba(255, 255, 255, 0.96));
+  padding: 14px;
+}
+
+.wallet-route-selector-head {
+  margin-bottom: 10px;
+}
+
+.wallet-route-selector-kicker {
+  display: inline-flex;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #60708a;
+}
+
+.wallet-route-selector-head h4 {
+  margin: 0;
+  color: #15243b;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.wallet-route-card-stack {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+}
+
+.wallet-route-palette {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.wallet-route-pill {
+  border: 1px solid rgba(136, 152, 176, 0.28);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.wallet-route-pill:hover,
+.wallet-route-pill:focus-visible,
+.wallet-route-pill.active {
+  border-color: rgba(240, 120, 24, 0.45);
+  box-shadow: 0 10px 18px rgba(240, 120, 24, 0.12);
+  transform: translateY(-1px);
+}
+
+.wallet-route-pill.selected {
+  border-color: #f07818;
+  background: linear-gradient(180deg, rgba(240, 120, 24, 0.07), rgba(255, 255, 255, 0.95));
+}
+
+.wallet-route-pill-chip {
+  width: 16px;
+  height: 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  box-shadow: 0 4px 8px rgba(20, 34, 56, 0.16);
+  flex-shrink: 0;
+}
+
+.wallet-route-pill-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.wallet-route-pill-copy strong {
+  color: #16253d;
+  font-size: 0.85rem;
+}
+
+.wallet-route-pill-copy small {
+  color: #6c7b90;
+  font-size: 0.74rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wallet-route-focus-card {
+  margin-top: 10px;
+  border: 1px solid rgba(136, 152, 176, 0.22);
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 11px 12px;
+}
+
+.wallet-route-focus-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.wallet-route-focus-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.wallet-route-focus-subtitle {
+  margin: 2px 0 0;
+  color: #66768c;
+  font-size: 0.78rem;
+}
+
+.wallet-route-focus-places {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.colored-trip-planner-panel .route-card {
+  border-radius: 16px;
+  border: 1px solid rgba(128, 147, 177, 0.2);
+  background: #ffffff;
+  box-shadow: 0 10px 20px rgba(21, 36, 59, 0.05);
+  padding: 10px 12px;
+}
+
+.colored-trip-planner-panel .route-card.selected {
+  border-color: rgba(240, 120, 24, 0.45);
+  box-shadow: 0 16px 26px rgba(240, 120, 24, 0.14);
+  transform: none;
+}
+
+.colored-trip-planner-panel .route-card-title {
+  font-size: 0.9rem;
+}
+
+.colored-trip-planner-panel .route-card-subtext {
+  font-size: 0.78rem;
+}
+
+.colored-trip-planner-panel .route-chip-tag {
+  background: rgba(240, 120, 24, 0.08);
+  border-color: rgba(240, 120, 24, 0.2);
+  color: #a04810;
+  font-size: 0.72rem;
+  padding: 4px 8px;
+}
+
+.wallet-route-select-btn {
+  padding: 8px 12px;
+  font-size: 0.76rem;
+  border-radius: 12px;
+  min-height: 34px;
+}
+
+.colored-trip-planner-panel .btn-neon-fill {
+  background: linear-gradient(135deg, #ff9d2f 0%, #f07818 100%);
+  box-shadow: 0 10px 22px rgba(240, 120, 24, 0.28);
+  border-color: rgba(240, 120, 24, 0.3);
+}
+
+.colored-trip-planner-panel .btn-neon-fill:hover {
+  background: linear-gradient(135deg, #f07818 0%, #d96310 100%);
+  box-shadow: 0 14px 26px rgba(240, 120, 24, 0.36);
+}
+
+.colored-trip-action {
+  flex: 1 1 220px;
+}
+
+.colored-trip-planner-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.colored-trip-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(135, 152, 180, 0.16);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.colored-trip-metric-card span {
+  color: #738097;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.colored-trip-metric-card strong {
+  color: #15243b;
+  font-size: 1.2rem;
+}
+
+.colored-trip-planner-stack {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.colored-trip-card {
+  border: 1px solid rgba(135, 152, 180, 0.18);
+  border-left: 6px solid var(--colored-trip-accent, #f07818);
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 12px 14px;
+  box-shadow: 0 10px 20px rgba(24, 36, 61, 0.06);
+}
+
+.colored-trip-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.colored-trip-card-title {
+  margin: 0;
+  color: var(--colored-trip-accent, #f07818);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.colored-trip-card-copy {
+  margin: 4px 0 0;
+  color: #5f6f84;
+  font-size: 0.92rem;
+}
+
+.colored-trip-card-remove {
+  border: none;
+  background: transparent;
+  color: #e45a46;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.colored-trip-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.colored-trip-card-stats span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f5f7fb;
+  color: #304056;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.colored-trip-load-stops-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(240, 120, 24, 0.28);
+  background: rgba(255, 247, 238, 0.9);
+  color: #c05a08;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.colored-trip-load-stops-btn:hover {
+  background: rgba(255, 238, 210, 1);
+  border-color: rgba(240, 120, 24, 0.55);
+}
+
+.colored-trip-stop-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.colored-trip-stop-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #fff8f2;
+}
+
+.colored-trip-stack-toggle {
+  margin-top: 10px;
+  width: 100%;
+  border: 1px dashed rgba(240, 120, 24, 0.35);
+  background: rgba(255, 247, 238, 0.85);
+  color: #c05a08;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.route-estimation {
+  margin-top: 12px !important;
+  border-radius: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(128, 147, 177, 0.2);
+  background: linear-gradient(180deg, rgba(242, 247, 255, 0.88), rgba(255, 255, 255, 0.94));
+  box-shadow: 0 10px 20px rgba(24, 36, 61, 0.08);
+}
+
+.route-estimation__title {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.route-estimation__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.route-estimation__badge {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--route-accent, #f07818);
+  box-shadow: 0 4px 10px rgba(240, 120, 24, 0.35);
+}
+
+.route-estimation__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #627086;
+}
+
+.route-estimation__value {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1a2b43;
+}
+
+.route-estimation__summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: #617188;
+  margin-bottom: 8px;
+}
+
+.route-estimation__list {
+  display: grid;
+  gap: 6px;
+}
+
+.route-estimation__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(141, 156, 183, 0.18);
+  border-radius: 10px;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.route-estimation__stop-index {
+  color: #2a5faa;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.route-estimation__stop-name {
+  color: #26374f;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.route-estimation__eta {
+  color: #5e6f86;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.route-estimation__error {
+  color: #a64646;
+  font-size: 0.82rem;
+}
+
+.route-estimation__back {
+  margin-top: 10px;
+  width: 100%;
+  min-height: 36px;
+  font-size: 0.78rem;
+  border-radius: 10px;
+}
+
+.colored-trip-stop-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(240, 120, 24, 0.12);
+  color: #e06a0f;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.colored-trip-stop-name {
+  color: #17273f;
+  font-weight: 600;
+}
+
+.colored-trip-stop-eta {
+  color: #6f7f93;
+  font-size: 0.82rem;
+}
+
+.colored-trip-planner-empty {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(240, 120, 24, 0.08);
+  color: #7a664f;
+  text-align: center;
+}
+
+.route-planner-eyebrow {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(22, 102, 255, 0.09);
+  color: #135dcb;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.route-planner-intro h2 {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: #0f1f35;
+}
+
+.route-planner-intro p {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.25vw, 1.05rem);
+  line-height: 1.65;
+  color: #5f6f84;
+}
+
+.route-town-boxes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 1.8vw, 18px);
+}
+
+.route-town-box {
+  border: 1px solid rgba(119, 137, 165, 0.22);
+  border-radius: 22px;
+  background: #ffffff;
+  padding: clamp(16px, 2vw, 22px);
+  min-height: 128px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 16px 32px rgba(28, 44, 74, 0.05);
+}
+
+.route-town-box:hover,
+.route-town-box:focus-visible {
+  border-color: rgba(19, 93, 203, 0.42);
+  box-shadow: 0 22px 36px rgba(18, 84, 189, 0.12);
+  transform: translateY(-2px);
+}
+
+.route-town-box.active {
+  border-color: #135dcb;
+  box-shadow: 0 24px 40px rgba(18, 84, 189, 0.18);
+}
+
+.route-town-box-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f07818;
+}
+
+.route-town-box-value {
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+  line-height: 1.2;
+  font-weight: 700;
+  color: #16253d;
+}
+
+.route-town-box-value.placeholder {
+  color: #8b97aa;
+}
+
+.route-town-box-meta {
+  font-size: 0.9rem;
+  color: #6a788e;
+}
+
+.route-town-picker {
+  border: 1px solid rgba(133, 150, 180, 0.18);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: clamp(16px, 2.2vw, 22px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 22px 34px rgba(28, 44, 74, 0.08);
+}
+
+.route-town-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.route-town-picker-kicker {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7f8aa0;
+}
+
+.route-town-picker-header h3 {
+  margin: 0;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  color: #132540;
+}
+
+.route-town-picker-close {
+  border: none;
+  background: rgba(18, 84, 189, 0.08);
+  color: #135dcb;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.route-town-search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.route-town-search span {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #314258;
+}
+
+.route-town-search input {
+  width: 100%;
+  border: 1px solid rgba(119, 137, 165, 0.26);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  background: #ffffff;
+  color: #132540;
+}
+
+.route-town-search input:focus {
+  outline: none;
+  border-color: #135dcb;
+  box-shadow: 0 0 0 4px rgba(18, 84, 189, 0.12);
+}
+
+.route-town-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.route-town-option {
+  border: 1px solid rgba(119, 137, 165, 0.18);
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.route-town-option:hover,
+.route-town-option:focus-visible {
+  border-color: rgba(19, 93, 203, 0.42);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(18, 84, 189, 0.1);
+}
+
+.route-town-option.selected {
+  border-color: #135dcb;
+  background: linear-gradient(180deg, rgba(19, 93, 203, 0.1), rgba(19, 93, 203, 0.04));
+}
+
+.route-town-option-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #15243b;
+}
+
+.route-town-option-meta {
+  font-size: 0.82rem;
+  color: #738097;
+}
+
+.route-town-empty {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(115, 128, 151, 0.08);
+  color: #5c6a80;
+  text-align: center;
+}
+
+.route-planner-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.route-planner-summary {
+  margin: 0;
+  flex: 1 1 260px;
+  font-size: 0.96rem;
+  color: #556378;
+}
+
+.route-plan-button {
+  min-width: 180px;
+  justify-content: center;
+}
+
+.route-planner-loading {
+  display: flex;
+  justify-content: center;
+  border-radius: 18px;
+  border: 1px solid rgba(19, 93, 203, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(239, 244, 255, 0.95));
+  padding: 14px;
+}
+
+.route-map-panel {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(133, 150, 180, 0.2);
+  background: #ffffff;
+  box-shadow: 0 24px 46px rgba(28, 44, 74, 0.08);
+}
+
+.route-map-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: clamp(16px, 2vw, 20px) clamp(16px, 2vw, 22px);
+  background: linear-gradient(180deg, #fbfcff 0%, #f2f7ff 100%);
+  border-bottom: 1px solid rgba(133, 150, 180, 0.16);
+}
+
+.route-map-panel-kicker {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f07818;
+}
+
+.route-map-panel-header h3 {
+  margin: 0;
+  font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+  color: #132540;
+}
+
+.route-map-panel-copy {
+  margin: 0;
+  max-width: 280px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #637186;
+  text-align: right;
+}
+
+.route-map-panel-body {
+  height: clamp(320px, 48vh, 560px);
+  background: linear-gradient(180deg, #eef5ff 0%, #e6edf9 100%);
+}
+
+.route-map-panel-body > div {
+  border-radius: 0 !important;
+}
+
 .grid-jeep-routes .subtitle {
   flex-shrink: 0;
   margin-bottom: 6px;
@@ -271,6 +1191,10 @@ body {
     min-height: 0;
     max-height: none;
   }
+
+  .route-planner-shell {
+    grid-column: 1;
+  }
 }
 
 .grid-map {
@@ -298,16 +1222,115 @@ body {
 }
 
 @media (max-width: 768px) {
+  .route-planner-head {
+    flex-direction: column;
+  }
+
+  .colored-trip-wallet {
+    width: 100%;
+  }
+
+  .colored-trip-planner-fab {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .colored-trip-planner-fab-summary {
+    align-items: flex-start;
+    border-left: none;
+    padding-left: 0;
+    margin-left: 0;
+  }
+
+  .colored-trip-planner-panel {
+    width: min(100%, 100vw - 40px);
+    left: 0;
+    right: auto;
+  }
+
+  .colored-trip-planner-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .colored-trip-stop-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .colored-trip-stop-eta {
+    grid-column: 2;
+  }
+
   .grid-map {
     min-height: clamp(280px, 45vh, 480px);
     border-radius: clamp(14px, 2vw, 18px);
   }
+
+  .route-town-boxes {
+    grid-template-columns: 1fr;
+  }
+
+  .route-map-panel-header {
+    flex-direction: column;
+  }
+
+  .route-map-panel-copy {
+    max-width: none;
+    text-align: left;
+  }
 }
 
 @media (max-width: 480px) {
+  .colored-trip-planner-panel {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+    max-height: calc(100vh - 24px);
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .colored-trip-planner-header {
+    flex-direction: column;
+  }
+
+  .colored-trip-planner-close {
+    align-self: flex-end;
+  }
+
+  .colored-trip-planner-fab {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .colored-trip-planner-fab-summary {
+    width: 100%;
+  }
+
   .grid-map {
     min-height: clamp(240px, 40vh, 420px);
     border-radius: clamp(12px, 2vw, 16px);
+  }
+
+  .route-planner-card {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .route-town-box {
+    min-height: 112px;
+    border-radius: 18px;
+  }
+
+  .route-town-picker,
+  .route-map-panel {
+    border-radius: 18px;
+  }
+
+  .route-plan-button {
+    width: 100%;
   }
 }
 
@@ -1579,6 +2602,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 999;
+  view-transition-name: none;
   padding: clamp(3px, 0.8vw, 6px) clamp(10px, 2vw, 16px);
   background: linear-gradient(135deg, #f7faff 0%, #eef2fb 80%);
   border-bottom: none;
@@ -1725,6 +2749,7 @@ body {
   background: #f5f5f5;
 }
 
+.home-landing-page .jeeproute-navbar,
 .home-landing-page .jeeproute-navbar {
   background: #ffffff;
   padding: 0 clamp(6px, 1.4vw, 14px);
@@ -1740,6 +2765,7 @@ body {
   padding: 10px clamp(4px, 1vw, 14px);
 }
 
+.home-landing-page .navbar-badge,
 .home-landing-page .navbar-badge {
   width: 30px;
   height: 30px;
@@ -1749,16 +2775,19 @@ body {
   box-shadow: 0 8px 18px rgba(247, 136, 35, 0.32);
 }
 
+.home-landing-page .navbar-brand-copy,
 .home-landing-page .navbar-brand-copy {
   flex-direction: row;
 }
 
+.home-landing-page .navbar-brand-title,
 .home-landing-page .navbar-brand-title {
   font-size: 1.65rem;
   font-weight: 700;
   line-height: 1;
 }
 
+.home-landing-page .navbar-brand-title::first-letter,
 .home-landing-page .navbar-brand-title::first-letter {
   color: #151515;
 }
@@ -1787,6 +2816,7 @@ body {
   color: #1f1f1f;
 }
 
+.home-landing-page .jeeproute-navbar .btn-neon-fill,
 .home-landing-page .jeeproute-navbar .btn-neon-fill {
   border-radius: 10px;
   min-height: 40px;
@@ -1795,6 +2825,7 @@ body {
   box-shadow: 0 10px 18px rgba(255, 140, 30, 0.26);
 }
 
+.home-landing-page .jeeproute-navbar .btn-neon-outline,
 .home-landing-page .jeeproute-navbar .btn-neon-outline {
   border: none;
   background: transparent;
