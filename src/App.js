@@ -44,7 +44,6 @@ const normalizeUser = (user) => {
 };
 function AnimatedRoutes({ currentUser, setCurrentUser }) {
   const location = useLocation();
->>>>>>> frontend-dev
   return (
     <div className="page-transition-wrapper" key={location.key}>
       <Routes>
