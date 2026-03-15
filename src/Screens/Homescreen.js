@@ -38,6 +38,18 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      id: "welcome",
+      role: "assistant",
+      text: "Hi! I am JeepRoute AI Chat. This is a temporary chat UI while backend integration is in progress.",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    },
+  ]);
+  const chatEndRef = useRef(null);
 
   // --- Use backend API for trip estimation ---
   const [tripStats, setTripStats] = useState([]); // [{distance, duration, cost, stopEtas: [{name, eta}]}]
@@ -160,6 +172,54 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
       setAiLoading(false);
     }
   };
+
+  const handleSendTempChat = () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || chatSending) return;
+    if (!currentUser) {
+      navigate("/signin", { state: { redirectTo: "/" } });
+      return;
+    }
+
+    const userMsg = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      text: trimmed,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setChatSending(true);
+
+    const lower = trimmed.toLowerCase();
+    let reply = "Thanks for your message. Backend AI chat is not connected yet, but this UI is ready for integration.";
+    if (lower.includes("fare") || lower.includes("bayad")) {
+      reply = "I can help with fare guidance soon. For now, check route details and payment plans while backend chat is being connected.";
+    } else if (lower.includes("traffic") || lower.includes("eta") || lower.includes("time")) {
+      reply = "Live ETA and traffic answers will come from backend AI later. This temporary chat can already receive/send messages.";
+    } else if (lower.includes("route") || lower.includes("jeep")) {
+      reply = "Route suggestions will be available once AI chat API is connected. You can still plan routes from the Routes section now.";
+    }
+
+    window.setTimeout(() => {
+      const botMsg = {
+        id: `bot-${Date.now()}`,
+        role: "assistant",
+        text: reply,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setChatMessages((prev) => [...prev, botMsg]);
+      setChatSending(false);
+    }, 450);
+  };
+
+  const handleAskAIButton = () => {
+    if (!currentUser) {
+      navigate("/signin", { state: { redirectTo: "/" } });
+      return;
+    }
+    setIsChatOpen((prev) => !prev);
+  };
   const [startTown, setStartTown] = useState(
     () => sessionStorage.getItem("startTown") || ""
   );
@@ -172,6 +232,18 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
     setAiSuggestion(null);
     setAiError("");
   }, [startTown, endTown]);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [chatMessages, chatSending]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setIsChatOpen(false);
+    }
+  }, [currentUser]);
   // Jeepney route selection state
   const [selectedJeepneyRoute, setSelectedJeepneyRoute] = useState(null);
   const [showColoredTripPlanner, setShowColoredTripPlanner] = useState(false);
@@ -226,6 +298,18 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
   const [townSearchTerm, setTownSearchTerm] = useState("");
   const [showAllWalletTrips, setShowAllWalletTrips] = useState(false);
   const [expandedTripStops, setExpandedTripStops] = useState({});
+  const [navUserOpen, setNavUserOpen] = useState(false);
+  const navUserRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (navUserRef.current && !navUserRef.current.contains(e.target)) {
+        setNavUserOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setActiveView(initialView);
@@ -775,12 +859,12 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
               <p className="popover-line">
                 Optimal Departure: <strong>{aiSuggestion.window || "N/A"}</strong>
               </p>
-              <p className="popover-line" style={{ color: "#8abfde" }}>
+              <p className="popover-line" style={{ color: "#8a633f" }}>
                 {aiSuggestion.rationale || "Insights calibrated"}
               </p>
             </div>
           ) : (
-            <p className="popover-line" style={{ color: "#8abfde" }}>
+            <p className="popover-line" style={{ color: "#8a633f" }}>
               AI mode provides proactive departure guidance once generated.
             </p>
           )}
@@ -923,11 +1007,11 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
             <div className="home-navbar-links" aria-label="Primary">
               <button className={`home-nav-link${activeView === "home" ? " is-active" : ""}`} onClick={() => switchView("home")}>Home</button>
               <button className={`home-nav-link${activeView === "routes" ? " is-active" : ""}`} onClick={() => switchView("routes")}>Routes</button>
-              <button className="home-nav-link" onClick={() => navigateWithTransition("/profile", "nav-profile")}>Profile</button>
+              <button className="home-nav-link" onClick={() => navigateWithTransition("/details", "nav-plans")}>Plans</button>
             </div>
 
             <div className="header-actions navbar-actions">
-              {!loggedIn && (
+              {!loggedIn ? (
                 <>
                   <button
                     className="btn-neon-outline"
@@ -944,27 +1028,27 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
                     {withSpinner("nav-signup", "Get Started")}
                   </button>
                 </>
-              )}
-              {loggedIn && (
-                <>
+              ) : (
+                <div className="nav-user-menu" ref={navUserRef}>
                   <button
-                    className="btn-neon-fill"
-                    onClick={() => navigateWithTransition("/profile", "nav-profile-btn")}
-                    disabled={!!navPendingKey}
+                    className="nav-user-trigger"
+                    onClick={() => setNavUserOpen(o => !o)}
+                    aria-expanded={navUserOpen}
+                    aria-haspopup="true"
                   >
-                    {withSpinner("nav-profile-btn", "Profile")}
+                    Hello, {(currentUser.username || currentUser.email || "User").split("@")[0]} <span className="nav-user-caret">{navUserOpen ? "▲" : "▼"}</span>
                   </button>
-                  <button
-                    className="btn-neon-outline"
-                    onClick={() => {
-                      setCurrentUser(null);
-                      localStorage.removeItem("currentUser");
-                      navigate("/");
-                    }}
-                  >
-                    Logout
-                  </button>
-                </>
+                  {navUserOpen && (
+                    <div className="nav-user-dropdown">
+                      <button className="nav-user-option" onClick={() => { setNavUserOpen(false); navigateWithTransition("/profile", "nav-profile-btn"); }}>
+                        Profile
+                      </button>
+                      <button className="nav-user-option nav-user-option-signout" onClick={() => { setNavUserOpen(false); setCurrentUser(null); localStorage.removeItem("currentUser"); navigate("/"); }}>
+                        Log Out
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -985,7 +1069,9 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
                 </p>
                 <div className="home-hero-actions">
                   <button className="btn-neon-fill" onClick={() => switchView("routes")}>Explore Routes</button>
-                  <button className="btn-neon-outline" onClick={() => navigateWithTransition("/signup", "hero-signup")} disabled={!!navPendingKey}>{withSpinner("hero-signup", "Create Account")}</button>
+                  {!loggedIn && (
+                    <button className="btn-neon-outline" onClick={() => navigateWithTransition("/signup", "hero-signup")} disabled={!!navPendingKey}>{withSpinner("hero-signup", "Create Account")}</button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1077,8 +1163,7 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
                     <span className="route-planner-eyebrow">Legacy Planner</span>
                     <h2>Plan your town-to-town trip</h2>
                     <p>
-                      Pick a starting town and destination. The town list is still
-                      powered by the existing towns API.
+                      Pick a starting town and destination. Plan your commutes better.
                     </p>
                   </div>
 
@@ -1100,7 +1185,7 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
                       </span>
                       <span className="colored-trip-planner-fab-copy">
                         <strong>Trip Wallet</strong>
-                        <small>Hover for color routes, totals, and stop loading</small>
+                        <small>Allows you to see your planned trips and their costs</small>
                       </span>
                       <span className="colored-trip-planner-fab-summary" aria-hidden="true">
                         <span>{plannedTrips.length} trip{plannedTrips.length === 1 ? "" : "s"}</span>
@@ -1117,10 +1202,9 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
                         <div className="colored-trip-planner-header">
                           <div>
                             <p className="colored-trip-planner-kicker">Wallet helper</p>
-                            <h3>Stack jeepney legs without leaving the planner</h3>
+                            <h3>Stack multiple jeepney routes</h3>
                             <p>
-                              Hover to calculate route combinations, keep the color coding,
-                              and load the chosen jeepney stops without taking over the screen.
+                              Choose a colored route to add to your trip.
                             </p>
                           </div>
                           <button
@@ -1620,53 +1704,92 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
             <div className="grid-ask-ai">
               <div className="ask-ai-header">Ask AI</div>
               <div className="ask-ai-content">
-                {currentUser?.is_premium && estimation && !estimation.loading ? (
-                  <>
-                    <button
-                      className="btn-neon-fill"
-                      style={{ width: '100%', fontSize: 24, padding: '8px' }}
-                      onClick={() => {
-                        if (!estimation || estimation.loading) return;
-                        setActiveFeature('ai');
-                      }}
-                      disabled={aiLoading || !estimation || estimation.loading}
-                    >
-                      {aiLoading ? '⏳' : '🤖'}
-                    </button>
-                    {aiSuggestion && (
-                      <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text)', textAlign: 'center' }}>
-                        <strong>{aiSuggestion.window || 'N/A'}</strong>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {currentUser && !currentUser.is_premium ? (
-                      <>
-                        <button
-                          className="btn-neon-fill"
-                          style={{ width: '100%', fontSize: 24, padding: '8px' }}
-                          onClick={() => navigate('/details')}
-                          disabled={aiLoading}
-                        >
-                          🤖
-                        </button>
-                        <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text)', textAlign: 'center' }}>
-                          <strong>Unlock AI guidance with JeepRoute Plus</strong>
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 10 }}>
-                        <span style={{ fontSize: '2.5rem' }}>🤖</span>
-                        <p style={{ marginTop: 4 }}>Premium</p>
-                      </div>
-                    )}
-                  </>
-                )}
+                <button
+                  type="button"
+                  className="ask-ai-launch-btn"
+                  onClick={handleAskAIButton}
+                >
+                  {currentUser ? (isChatOpen ? "Hide AI Chat" : "Open AI Chat") : "Sign In to Use AI Chat"}
+                </button>
+                <p className="ask-ai-launch-copy">
+                  {currentUser
+                    ? "Chat opens as a floating panel so it won't take grid space."
+                    : "Sign in or sign up first to open the AI chat panel."}
+                </p>
               </div>
             </div>
+
+            {isChatOpen && currentUser && (
+              <div className="ask-ai-float-chat" role="dialog" aria-label="AI chat panel">
+                <div className="ask-ai-float-head">
+                  <p className="ask-ai-float-title">JeepRoute AI Chat</p>
+                  <button
+                    type="button"
+                    className="ask-ai-float-close"
+                    aria-label="Close AI chat"
+                    onClick={() => setIsChatOpen(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="ask-ai-chat-wrap">
+                  <div className="ask-ai-chat-window" aria-live="polite">
+                    {chatMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`ask-ai-msg ${msg.role === "user" ? "is-user" : "is-bot"}`}
+                      >
+                        <div className="ask-ai-bubble">{msg.text}</div>
+                        <span className="ask-ai-msg-time">{msg.time}</span>
+                      </div>
+                    ))}
+                    {chatSending && (
+                      <div className="ask-ai-msg is-bot">
+                        <div className="ask-ai-bubble">Typing...</div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                  <div className="ask-ai-composer">
+                    <input
+                      type="text"
+                      className="ask-ai-input"
+                      placeholder="Type your message..."
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSendTempChat();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="ask-ai-send"
+                      onClick={handleSendTempChat}
+                      disabled={chatSending || !chatInput.trim()}
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+        )}
+
+        {showLegacyPlanner && (
+          <button
+            type="button"
+            className={`ask-ai-corner-fab${isChatOpen ? " is-hidden" : ""}`}
+            onClick={handleAskAIButton}
+            aria-label={currentUser ? "Open AI chat" : "Sign in to use AI chat"}
+          >
+            <span className="ask-ai-corner-fab-icon" aria-hidden="true">💬</span>
+            <span className="ask-ai-corner-fab-text">Chat</span>
+          </button>
         )}
       </div>
     </>

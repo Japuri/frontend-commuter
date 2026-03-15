@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Homescreen from './Screens/Homescreen';
 import LoginScreen from './Screens/LoginScreen';
 import SignIn from './Screens/SignIn';
@@ -6,6 +6,7 @@ import SignUp from './Screens/SignUp';
 import ProfileScreen from './Screens/ProfileScreen';
 import PaymentScreen from './Screens/PaymentScreen';
 import PaymentSuccessScreen from './Screens/PaymentSuccessScreen';
+import DetailScreen from './Screens/DetailScreen';
 import PaymentCancelScreen from './Screens/PaymentCancelScreen';
 import { useState, useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
@@ -33,29 +34,15 @@ function SetGlobalNavigate() {
   return null;
 }
 
-function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser && currentUser) {
-      setCurrentUser(null);
-    } else if (savedUser && (!currentUser || savedUser !== JSON.stringify(currentUser))) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-  }, [currentUser]);
-
+function AnimatedRoutes({ currentUser, setCurrentUser }) {
+  const location = useLocation();
   return (
-    <Router>
-      <SetGlobalNavigate />
+    <div className="page-transition-wrapper" key={location.key}>
       <Routes>
         <Route
           path="/" element={<Homescreen currentUser={currentUser} setCurrentUser={setCurrentUser} />} />
         <Route
-          path="/details" element={<Homescreen currentUser={currentUser} setCurrentUser={setCurrentUser} initialView="routes" />} />
+          path="/details" element={<DetailScreen currentUser={currentUser} setCurrentUser={setCurrentUser} />} />
         <Route
           path="/login" element={<LoginScreen setCurrentUser={setCurrentUser}/>} />
         <Route
@@ -75,6 +62,29 @@ function App() {
         <Route path="/payment/cancel" element={<PaymentCancelScreen />} />
         <Route path="/profile" element={<ProfileScreen currentUser={currentUser} token={currentUser?.token} />} />
       </Routes>
+    </div>
+  );
+}
+
+function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser && currentUser) {
+      setCurrentUser(null);
+    } else if (savedUser && (!currentUser || savedUser !== JSON.stringify(currentUser))) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+  }, [currentUser]);
+
+  return (
+    <Router>
+      <SetGlobalNavigate />
+      <AnimatedRoutes currentUser={currentUser} setCurrentUser={setCurrentUser} />
     </Router>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Spinner from "../Components/Spinner";
 import { logout as authLogout } from "../services/auth";
@@ -29,6 +29,8 @@ export default function ProfileScreen({ currentUser, token }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [navUserOpen, setNavUserOpen] = useState(false);
+  const navUserRef = useRef(null);
   const loggedIn = !!currentUser;
 
   const fetchData = useCallback(async () => {
@@ -68,6 +70,16 @@ export default function ProfileScreen({ currentUser, token }) {
     fetchData();
   }, [fetchData, location.key]);
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (navUserRef.current && !navUserRef.current.contains(e.target)) {
+        setNavUserOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Refetch data when the page becomes visible (user navigates back)
   useEffect(() => {
     const handleFocus = () => {
@@ -82,7 +94,7 @@ export default function ProfileScreen({ currentUser, token }) {
   if (loading) {
     return (
       <div className="profile-loading-state">
-        <Spinner size={52} color="#1b63d1" text="Loading profile..." />
+        <Spinner size={52} color="#f07818" text="Loading profile..." />
       </div>
     );
   }
@@ -95,18 +107,28 @@ export default function ProfileScreen({ currentUser, token }) {
   const totalTrips = profile.total_trips;
   const lastTravel = history[0];
   const avatar = name?.[0]?.toUpperCase?.() || "J";
+  const helloName = (currentUser?.username || currentUser?.email || "User").split("@")[0];
+  const isPlus = String(sub).toLowerCase().includes("plus");
 
   return (
-    <div className="jeeproute-page dashboard-shell profile-clean">
+    <div className="jeeproute-page dashboard-shell home-landing-page profile-clean">
       <div className="jeeproute-navbar">
-        <div className="navbar-shell">
+        <div className="navbar-shell home-navbar-shell">
           <div className="navbar-brand-block">
-            <div className="navbar-badge" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-truck-front" viewBox="0 0 16 16"> <path d="M5 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0m8 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-6-1a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2zM4 2a1 1 0 0 0-1 1v3.9c0 .625.562 1.092 1.17.994C5.075 7.747 6.792 7.5 8 7.5s2.925.247 3.83.394A1.008 1.008 0 0 0 13 6.9V3a1 1 0 0 0-1-1zm0 1h8v3.9q0 .002 0 0l-.002.004-.005.002h-.004C11.088 6.761 9.299 6.5 8 6.5s-3.088.26-3.99.406h-.003l-.005-.002L4 6.9q0 .002 0 0z"/> <path d="M1 2.5A2.5 2.5 0 0 1 3.5 0h9A2.5 2.5 0 0 1 15 2.5v9c0 .818-.393 1.544-1 2v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V14H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2a2.5 2.5 0 0 1-1-2zM3.5 1A1.5 1.5 0 0 0 2 2.5v9A1.5 1.5 0 0 0 3.5 13h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 12.5 1z"/></svg></div>
+            <div className="navbar-badge" aria-hidden="true">↗</div>
             <div className="navbar-brand-copy">
-              <span className="navbar-brand-title">JeepRoute</span>
-              <span className="navbar-brand-tagline">Pampanga commute lab</span>
+              <span className="navbar-brand-title">
+                Jeep<span className="home-brand-route">Route</span>
+              </span>
             </div>
           </div>
+
+          <div className="home-navbar-links" aria-label="Primary">
+            <button className="home-nav-link" onClick={() => navigate("/")}>Home</button>
+            <button className="home-nav-link" onClick={() => navigate("/")}>Routes</button>
+            <button className="home-nav-link" onClick={() => navigate("/details")}>Plans</button>
+          </div>
+
           <div className="header-actions navbar-actions">
             {!loggedIn && (
               <>
@@ -120,32 +142,49 @@ export default function ProfileScreen({ currentUser, token }) {
                   className="btn-neon-fill"
                   onClick={() => navigate("/signup")}
                 >
-                  Sign Up
+                  Get Started
                 </button>
               </>
             )}
             {loggedIn && (
-              <>
-                <span className="navbar-greeting">
-                  Hi, {(currentUser?.email || "User").split("@")[0]}
-                </span>
+              <div className="nav-user-menu" ref={navUserRef}>
                 <button
-                  className="btn-neon-fill"
-                  onClick={() => navigate("/")}
+                  className="nav-user-trigger"
+                  onClick={() => setNavUserOpen((o) => !o)}
+                  aria-expanded={navUserOpen}
+                  aria-haspopup="true"
                 >
-                  Planner
+                  Hello, {helloName} <span className="nav-user-caret">{navUserOpen ? "▲" : "▼"}</span>
                 </button>
-                <button
-                  className="btn-neon-outline"
-                  onClick={() => {
-                    try { authLogout(); } catch {}
-                    try { localStorage.removeItem("currentUser"); } catch {}
-                    navigate("/");
-                  }}
-                >
-                  Logout
-                </button>
-              </>
+                {navUserOpen && (
+                  <div className="nav-user-dropdown">
+                    <button
+                      className="nav-user-option"
+                      onClick={() => {
+                        setNavUserOpen(false);
+                        navigate("/profile");
+                      }}
+                    >
+                      Profile
+                    </button>
+                    <button
+                      className="nav-user-option nav-user-option-signout"
+                      onClick={() => {
+                        setNavUserOpen(false);
+                        try {
+                          authLogout();
+                        } catch {}
+                        try {
+                          localStorage.removeItem("currentUser");
+                        } catch {}
+                        navigate("/");
+                      }}
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -156,10 +195,10 @@ export default function ProfileScreen({ currentUser, token }) {
           <div className="profile-identity">
             <div className="profile-avatar">{avatar}</div>
             <div className="profile-heading">
-              <p className="eyebrow">Profile</p>
+              <p className="eyebrow">Traveler Profile</p>
               <h1 className="profile-title">{name}</h1>
               <p className="profile-subtitle">
-                {type} • {sub}
+                {type} commuter • {isPlus ? "Plus Member" : sub}
               </p>
               <div className="profile-tags">
                 <span className="chip">{type}</span>
@@ -170,13 +209,13 @@ export default function ProfileScreen({ currentUser, token }) {
               </div>
               <div className="profile-actions">
                 <button className="btn-primary" onClick={() => navigate("/")}>
-                  Go to Planner
+                  Open Planner
                 </button>
                 <button
                   className="btn-ghost"
-                  onClick={() => navigate("/payment", { state: { plan: sub === 'free' ? 'plus' : sub } })}
+                  onClick={() => navigate("/payment", { state: { plan: "plus" } })}
                 >
-                  Manage Subscription
+                  {isPlus ? "Manage Plus" : "Upgrade to Plus"}
                 </button>
               </div>
             </div>
@@ -191,9 +230,9 @@ export default function ProfileScreen({ currentUser, token }) {
               </p>
             </div>
             <div className="metric-card">
-              <p className="metric-label">Subscription</p>
-              <p className="metric-value">{sub}</p>
-              <p className="metric-foot">{type}</p>
+              <p className="metric-label">Membership</p>
+              <p className="metric-value">{isPlus ? "Plus" : "Free"}</p>
+              <p className="metric-foot">{sub}</p>
             </div>
             <div className="metric-card">
               <p className="metric-label">Last Travel</p>
@@ -216,7 +255,7 @@ export default function ProfileScreen({ currentUser, token }) {
                 <p className="eyebrow">Account</p>
                 <h3>Traveler Details</h3>
               </div>
-              <span className="pill">Active</span>
+              <span className="pill">Verified</span>
             </div>
             <div className="detail-rows">
               <div className="detail-row">

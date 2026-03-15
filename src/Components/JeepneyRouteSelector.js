@@ -4,6 +4,19 @@ import { JEEPNEY_ROUTE_COLORS } from '../data/jeepney_routes';
 export default function JeepneyRouteSelector({ onRouteSelect, selectedRoute }) {
   const [previewRoute, setPreviewRoute] = useState(null);
 
+  const getReadableRouteColor = (hex) => {
+    const normalized = String(hex || '').replace('#', '');
+    if (![3, 6].includes(normalized.length)) return '#1b253a';
+    const full = normalized.length === 3
+      ? normalized.split('').map((c) => c + c).join('')
+      : normalized;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    return luminance > 0.78 ? '#1b253a' : `#${full}`;
+  };
+
   const activeRoute = useMemo(() => {
     if (selectedRoute) return selectedRoute;
     if (previewRoute) return previewRoute;
@@ -56,7 +69,7 @@ export default function JeepneyRouteSelector({ onRouteSelect, selectedRoute }) {
         <div className="wallet-route-focus-card">
           <div className="wallet-route-focus-head">
             <div>
-              <p className="wallet-route-focus-title" style={{ color: activeRoute.hex }}>
+              <p className="wallet-route-focus-title" style={{ color: getReadableRouteColor(activeRoute.hex) }}>
                 {activeRoute.color} Route
               </p>
               <p className="wallet-route-focus-subtitle">{activeRoute.route}</p>
