@@ -214,13 +214,11 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
       });
 
       let botReply = "Sorry but this is a commuting app";
-      let isSuccess = false;
 
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
           botReply = data.message || botReply;
-          isSuccess = true;
         } else {
           botReply = data.message || data.error || botReply;
         }
