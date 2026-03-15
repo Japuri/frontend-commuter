@@ -1,9 +1,9 @@
 import React from "react";
 import "./Spinner.css";
 
-export default function Spinner({ size = 48, color = "#00d4ff", text = "Loading..." }) {
+export default function Spinner({ size = 48, color = "#00d4ff", text = "Loading...", inline = false }) {
   return (
-    <div className="spinner-container">
+    <div className={`spinner-container${inline ? " spinner-inline" : ""}`}>
       <div
         className="spinner-outer"
         style={{ width: size, height: size }}

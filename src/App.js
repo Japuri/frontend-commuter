@@ -1,12 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Homescreen from './Screens/Homescreen';
-import DetailScreen from './Screens/DetailScreen';
 import LoginScreen from './Screens/LoginScreen';
 import SignIn from './Screens/SignIn';
 import SignUp from './Screens/SignUp';
 import ProfileScreen from './Screens/ProfileScreen';
 import PaymentScreen from './Screens/PaymentScreen';
 import PaymentSuccessScreen from './Screens/PaymentSuccessScreen';
+import DetailScreen from './Screens/DetailScreen';
 import PaymentCancelScreen from './Screens/PaymentCancelScreen';
 import { useState, useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
@@ -34,7 +34,7 @@ function SetGlobalNavigate() {
   return null;
 }
 
-// ...existing code...
+// Normalize user utility
 const normalizeUser = (user) => {
   if (!user) return null;
   return {
@@ -42,39 +42,11 @@ const normalizeUser = (user) => {
     is_premium: user.subscription_status === 'plus' || user.subscription_status === 'premium'
   };
 };
-
-function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      const normalized = normalizeUser(parsed);
-      // ...existing code...
-      localStorage.setItem('currentUser', JSON.stringify(normalized));
-      return normalized;
-    }
-    return null;
-  });
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser && currentUser) {
-      setCurrentUser(null);
-    } else if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      const normalized = normalizeUser(parsed);
-      // ...existing code...
-      if (currentUser?.subscription_status !== parsed.subscription_status || 
-          currentUser?.is_premium !== normalized.is_premium) {
-        setCurrentUser(normalized);
-        localStorage.setItem('currentUser', JSON.stringify(normalized));
-      }
-    }
-  }, [currentUser]);
-
+function AnimatedRoutes({ currentUser, setCurrentUser }) {
+  const location = useLocation();
+>>>>>>> frontend-dev
   return (
-    <Router>
-      <SetGlobalNavigate />
+    <div className="page-transition-wrapper" key={location.key}>
       <Routes>
         <Route
           path="/" element={<Homescreen currentUser={currentUser} setCurrentUser={setCurrentUser} />} />
@@ -99,6 +71,29 @@ function App() {
         <Route path="/payment/cancel" element={<PaymentCancelScreen />} />
         <Route path="/profile" element={<ProfileScreen currentUser={currentUser} token={currentUser?.token} />} />
       </Routes>
+    </div>
+  );
+}
+
+function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser && currentUser) {
+      setCurrentUser(null);
+    } else if (savedUser && (!currentUser || savedUser !== JSON.stringify(currentUser))) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+  }, [currentUser]);
+
+  return (
+    <Router>
+      <SetGlobalNavigate />
+      <AnimatedRoutes currentUser={currentUser} setCurrentUser={setCurrentUser} />
     </Router>
   );
 }

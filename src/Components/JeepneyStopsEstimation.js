@@ -43,6 +43,8 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
 
   if (!route || !route.stops || route.stops.length === 0) return null;
 
+  const finalEta = etas.length > 0 ? etas[etas.length - 1]?.eta : null;
+
   return (
     <div
       className="plan-card free route-estimation"
@@ -61,7 +63,13 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
       ) : error ? (
         <div className="route-estimation__error">{error}</div>
       ) : (
-        <div className="route-estimation__list">
+        <>
+          <div className="route-estimation__summary">
+            <span>{etas.length} stops tracked</span>
+            <span>{finalEta != null ? `Final ETA: ${finalEta} min` : 'ETA unavailable'}</span>
+          </div>
+
+          <div className="route-estimation__list">
           {etas.map((stop, idx) => (
             <div key={idx} className="route-estimation__row">
               <span className="route-estimation__stop-index">
@@ -71,7 +79,8 @@ export default function JeepneyStopsEstimation({ route, onBack }) {
               <span className="route-estimation__eta">ETA: {stop.eta} min</span>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
       <button className="btn-neon-outline route-estimation__back" onClick={onBack}>
         Back to Route Selection

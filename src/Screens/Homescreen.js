@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import Spinner from "../Components/Spinner";
-import { useNavigate } from "react-router-dom";
-import TownSelector from "../Components/TownSelector";
 import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
 import JeepneyStopsEstimation from "../Components/JeepneyStopsEstimation";
-import { db, getTownById, logTrip } from "./db";
-// ...existing code...
+import { useNavigate } from "react-router-dom";
+import { db, getTownById, logTrip, getUserById, getRecentSelectionsForUser } from "./db";
+// import JeepneyLegend from "../Components/JeepneyLegend";
 import { logTravel } from "../services/travelLogger";
 import {
   weatherBadgeFor,
@@ -19,7 +18,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 // ...existing code...
 
-function Homescreen({ currentUser, setCurrentUser }) {
+function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
   const getReadableRouteColor = (hex) => {
     const normalized = String(hex || "").replace("#", "");
     if (![3, 6].includes(normalized.length)) return "#1b253a";
@@ -39,6 +38,18 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      id: "welcome",
+      role: "assistant",
+      text: "Hi! I am JeepRoute AI Chat. This is a temporary chat UI while backend integration is in progress.",
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    },
+  ]);
+  const chatEndRef = useRef(null);
 
   // ...existing code...
   const [tripStats, setTripStats] = useState([]);
@@ -99,6 +110,29 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const handleRemoveTrip = (idx) => {
     setPlannedTrips(plannedTrips.filter((_, i) => i !== idx));
   };
+
+  const handleJeepneyRouteSelect = (route) => {
+    setCurrentRoute(route);
+    setSelectedJeepneyRoute(route);
+    setShowJeepneyStops(false);
+    setShowColoredTripPlanner(true);
+  };
+
+  const handleToggleColoredTripPlanner = () => {
+    const nextOpen = !showColoredTripPlanner;
+    setShowColoredTripPlanner(nextOpen);
+    setIsColoredTripPlannerPinned(nextOpen);
+    if (!nextOpen) {
+      setShowJeepneyStops(false);
+    }
+  };
+
+  const handleCloseColoredTripPlanner = () => {
+    setShowColoredTripPlanner(false);
+    setShowJeepneyStops(false);
+    setIsColoredTripPlannerPinned(false);
+  };
+
   const handleActivateAIMode = async () => {
     if (!estimation || !currentUser?.is_premium) return;
     setAiLoading(true);
@@ -138,6 +172,54 @@ function Homescreen({ currentUser, setCurrentUser }) {
       setAiLoading(false);
     }
   };
+
+  const handleSendTempChat = () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || chatSending) return;
+    if (!currentUser) {
+      navigate("/signin", { state: { redirectTo: "/" } });
+      return;
+    }
+
+    const userMsg = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      text: trimmed,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setChatSending(true);
+
+    const lower = trimmed.toLowerCase();
+    let reply = "Thanks for your message. Backend AI chat is not connected yet, but this UI is ready for integration.";
+    if (lower.includes("fare") || lower.includes("bayad")) {
+      reply = "I can help with fare guidance soon. For now, check route details and payment plans while backend chat is being connected.";
+    } else if (lower.includes("traffic") || lower.includes("eta") || lower.includes("time")) {
+      reply = "Live ETA and traffic answers will come from backend AI later. This temporary chat can already receive/send messages.";
+    } else if (lower.includes("route") || lower.includes("jeep")) {
+      reply = "Route suggestions will be available once AI chat API is connected. You can still plan routes from the Routes section now.";
+    }
+
+    window.setTimeout(() => {
+      const botMsg = {
+        id: `bot-${Date.now()}`,
+        role: "assistant",
+        text: reply,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setChatMessages((prev) => [...prev, botMsg]);
+      setChatSending(false);
+    }, 450);
+  };
+
+  const handleAskAIButton = () => {
+    if (!currentUser) {
+      navigate("/signin", { state: { redirectTo: "/" } });
+      return;
+    }
+    setIsChatOpen((prev) => !prev);
+  };
   const [startTown, setStartTown] = useState(
     () => sessionStorage.getItem("startTown") || ""
   );
@@ -150,9 +232,22 @@ function Homescreen({ currentUser, setCurrentUser }) {
     setAiSuggestion(null);
     setAiError("");
   }, [startTown, endTown, currentUser]);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [chatMessages, chatSending]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setIsChatOpen(false);
+    }
+  }, [currentUser]);
   // Jeepney route selection state
   const [selectedJeepneyRoute, setSelectedJeepneyRoute] = useState(null);
-  const [useJeepneyMode, setUseJeepneyMode] = useState(true);
+  const [showColoredTripPlanner, setShowColoredTripPlanner] = useState(false);
+  const [isColoredTripPlannerPinned, setIsColoredTripPlannerPinned] = useState(false);
   // Congratulatory popup state
   const [showCongrats, setShowCongrats] = useState(false);
   // Show stops estimation after planning jeepney route
@@ -160,14 +255,10 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [showPremiumInfo, setShowPremiumInfo] = useState(false);
   const [showUpgradeInfo, setShowUpgradeInfo] = useState(false);
   const [activeFeature, setActiveFeature] = useState(null);
-
-  // Ensure selectedJeepneyRoute is not reset when toggling modes
-  useEffect(() => {
-    if (!useJeepneyMode) {
-      setShowJeepneyStops(false);
-      setSelectedJeepneyRoute(null); // Reset selected jeepney route when switching to town-to-town
-    }
-  }, [useJeepneyMode]);
+  const [homeStats, setHomeStats] = useState({
+    profile: null,
+    history: [],
+  });
 
   // Persist town selections in sessionStorage
   const handleSetStartTown = (val) => {
@@ -201,6 +292,135 @@ function Homescreen({ currentUser, setCurrentUser }) {
   const [estimation, setEstimation] = useState(null);
   const [routeRequested, setRouteRequested] = useState(false);
   const navigate = useNavigate();
+  const [navPendingKey, setNavPendingKey] = useState("");
+  const [activeView, setActiveView] = useState(initialView);
+  const [openTownPicker, setOpenTownPicker] = useState(null);
+  const [townSearchTerm, setTownSearchTerm] = useState("");
+  const [showAllWalletTrips, setShowAllWalletTrips] = useState(false);
+  const [expandedTripStops, setExpandedTripStops] = useState({});
+  const [navUserOpen, setNavUserOpen] = useState(false);
+  const navUserRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (navUserRef.current && !navUserRef.current.contains(e.target)) {
+        setNavUserOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setActiveView(initialView);
+  }, [initialView]);
+
+  const selectedStartTown =
+    towns.find((town) => String(town.id) === String(startTown)) ||
+    getTownById(startTown);
+  const selectedEndTown =
+    towns.find((town) => String(town.id) === String(endTown)) ||
+    getTownById(endTown);
+  const canPlanTownRoute = Boolean(
+    startTown && endTown && String(startTown) !== String(endTown)
+  );
+  const filteredTowns = towns.filter((town) =>
+    String(town.name || "")
+      .toLowerCase()
+      .includes(townSearchTerm.trim().toLowerCase())
+  );
+
+  const openPlannerTownPicker = (field) => {
+    setOpenTownPicker((currentField) =>
+      currentField === field ? null : field
+    );
+    setTownSearchTerm("");
+  };
+
+  const handlePlannerTownPick = async (field, townId) => {
+    if (field === "start") {
+      handleSetStartTown(townId);
+    } else {
+      await handleSetEndTown(townId);
+    }
+    setOpenTownPicker(null);
+    setTownSearchTerm("");
+  };
+
+  const handlePlanTownRoute = () => {
+    if (!currentUser) {
+      navigate("/signin");
+      return;
+    }
+
+    if (currentUser?.id) {
+      let townName;
+      try {
+        const byId = towns.find((town) => String(town.id) === String(endTown));
+        townName = byId?.name;
+        if (!townName) {
+          const fallback = getTownById(endTown);
+          townName = fallback?.name;
+        }
+      } catch {}
+
+      try {
+        logTravel({
+          user_id: currentUser.id,
+          town_id: endTown,
+          town_name: townName,
+          selected_at: new Date().toISOString(),
+        });
+      } catch {}
+    }
+
+    setOpenTownPicker(null);
+    setRouteRequested(true);
+  };
+
+  const switchView = (nextView) => {
+    if (nextView === activeView) {
+      if (nextView === "home") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
+    const updateView = () => {
+      setActiveView(nextView);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    if (typeof document !== "undefined" && document.startViewTransition) {
+      document.startViewTransition(updateView);
+    } else {
+      updateView();
+    }
+  };
+
+  const navigateWithTransition = (path, key) => {
+    if (navPendingKey) return;
+
+    setNavPendingKey(key);
+    const doNavigate = () => navigate(path);
+
+    if (typeof document !== "undefined" && document.startViewTransition) {
+      document.startViewTransition(doNavigate);
+    } else {
+      setTimeout(doNavigate, 120);
+    }
+  };
+
+  const withSpinner = (key, label) => (
+    navPendingKey === key ? (
+      <>
+        <span className="btn-inline-spinner" aria-hidden="true" />
+        {label}
+      </>
+    ) : (
+      label
+    )
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.__premiumConfig) {
@@ -242,6 +462,39 @@ function Homescreen({ currentUser, setCurrentUser }) {
         setTowns(db.towns);
       });
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchHomeStats() {
+      if (!currentUser?.id || !currentUser?.token) {
+        setHomeStats({ profile: null, history: [] });
+        return;
+      }
+
+      try {
+        const [profile, history] = await Promise.all([
+          getUserById(currentUser.id, currentUser.token),
+          getRecentSelectionsForUser(currentUser.id, currentUser.token),
+        ]);
+
+        if (cancelled) return;
+        setHomeStats({
+          profile: profile || null,
+          history: Array.isArray(history) ? history : [],
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setHomeStats({ profile: null, history: [] });
+        }
+      }
+    }
+
+    fetchHomeStats();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id, currentUser?.token]);
 
   useEffect(() => {
     if (routeRequested && startTown && endTown && startTown !== endTown) {
@@ -418,6 +671,8 @@ function Homescreen({ currentUser, setCurrentUser }) {
     ) : null;
 
   const loggedIn = !!currentUser;
+  // Keep the old planner dashboard available for later redesign steps.
+  const showLegacyPlanner = activeView === "routes";
 
   const estimationReady = Boolean(estimation) && !estimation?.loading && !estimation?.error;
   const insightsReady = currentUser?.is_premium && estimationReady;
@@ -604,12 +859,12 @@ function Homescreen({ currentUser, setCurrentUser }) {
               <p className="popover-line">
                 Optimal Departure: <strong>{aiSuggestion.window || "N/A"}</strong>
               </p>
-              <p className="popover-line" style={{ color: "#8abfde" }}>
+              <p className="popover-line" style={{ color: "#8a633f" }}>
                 {aiSuggestion.rationale || "Insights calibrated"}
               </p>
             </div>
           ) : (
-            <p className="popover-line" style={{ color: "#8abfde" }}>
+            <p className="popover-line" style={{ color: "#8a633f" }}>
               AI mode provides proactive departure guidance once generated.
             </p>
           )}
@@ -652,236 +907,638 @@ function Homescreen({ currentUser, setCurrentUser }) {
     );
   };
 
+  const tripsCompleted = homeStats.profile?.total_trips ?? 0;
+  const recentTrips = homeStats.history?.length ?? 0;
+  const latestDestination = homeStats.history?.[0]?.town_name || "No trip yet";
+  const avgPlannedEta = tripStats.length
+    ? Math.round(tripStats.reduce((sum, t) => sum + (t.duration || 0), 0) / tripStats.length)
+    : null;
+  const selectedColoredRoute = currentRoute || selectedJeepneyRoute;
+  const visibleWalletTrips = showAllWalletTrips ? plannedTrips : plannedTrips.slice(0, 2);
+
+  const homeStatCards = [
+    {
+      icon: "🧾",
+      value: String(tripsCompleted),
+      label: "Trips Completed",
+    },
+    {
+      icon: "🕘",
+      value: String(recentTrips),
+      label: "Recent Trips Logged",
+    },
+    {
+      icon: "📍",
+      value: latestDestination,
+      label: "Latest Destination",
+    },
+    {
+      icon: "◷",
+      value: avgPlannedEta ? `${avgPlannedEta} min` : "No active plan",
+      label: "Current Average ETA",
+    },
+  ];
+
+  const onboardingSteps = [
+    {
+      step: "STEP 1",
+      icon: "📍",
+      title: "Choose Your Route",
+      copy: "Select your origin and destination from the route list or search bar.",
+    },
+    {
+      step: "STEP 2",
+      icon: "🧭",
+      title: "View on Map",
+      copy: "See the full route on an interactive map with all stops highlighted.",
+    },
+    {
+      step: "STEP 3",
+      icon: "💳",
+      title: "Check Fare & Details",
+      copy: "Get instant fare calculation with student discount applied automatically.",
+    },
+    {
+      step: "STEP 4",
+      icon: "🤖",
+      title: "Ask JeepAI",
+      copy: "Use our AI chatbot for personalized route recommendations and tips.",
+    },
+  ];
+
+  const smartTips = [
+    {
+      icon: "🛡️",
+      title: "Student ID Required",
+      copy: "Always carry your valid student ID for discounted fares.",
+    },
+    {
+      icon: "🗺️",
+      title: "Know Your Route",
+      copy: "Check the route map before boarding to ensure you are on the right jeepney.",
+    },
+    {
+      icon: "⚡",
+      title: "Real-time Updates",
+      copy: "Enable notifications for route changes, fare updates, and traffic alerts.",
+    },
+    {
+      icon: "⭐",
+      title: "Premium Benefits",
+      copy: "Upgrade for ad-free experience, offline maps, and advanced AI features.",
+    },
+  ];
+
   return (
     <>
       <CongratsModal />
-      <div className="jeeproute-page dashboard-shell">
+      <div className="jeeproute-page dashboard-shell home-landing-page">
         <div className="jeeproute-navbar">
-          <div className="navbar-shell">
+          <div className="navbar-shell home-navbar-shell">
             <div className="navbar-brand-block">
-              <div className="navbar-badge" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-truck-front" viewBox="0 0 16 16"> <path d="M5 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0m8 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m-6-1a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2zM4 2a1 1 0 0 0-1 1v3.9c0 .625.562 1.092 1.17.994C5.075 7.747 6.792 7.5 8 7.5s2.925.247 3.83.394A1.008 1.008 0 0 0 13 6.9V3a1 1 0 0 0-1-1zm0 1h8v3.9q0 .002 0 0l-.002.004-.005.002h-.004C11.088 6.761 9.299 6.5 8 6.5s-3.088.26-3.99.406h-.003l-.005-.002L4 6.9q0 .002 0 0z"/> <path d="M1 2.5A2.5 2.5 0 0 1 3.5 0h9A2.5 2.5 0 0 1 15 2.5v9c0 .818-.393 1.544-1 2v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V14H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2a2.5 2.5 0 0 1-1-2zM3.5 1A1.5 1.5 0 0 0 2 2.5v9A1.5 1.5 0 0 0 3.5 13h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 12.5 1z"/></svg></div>
+              <div className="navbar-badge" aria-hidden="true">↗</div>
               <div className="navbar-brand-copy">
-                <span className="navbar-brand-title">JeepRoute</span>
-                <span className="navbar-brand-tagline">Pampanga commute lab</span>
+                <span className="navbar-brand-title">
+                  Jeep<span className="home-brand-route">Route</span>
+                </span>
               </div>
             </div>
-            <div className="header-actions navbar-actions">
-              {!loggedIn && (
-                <>
-                  <button
-                    className="btn-neon-outline"
-                    onClick={() => navigate("/signin")}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    className="btn-neon-fill"
-                    onClick={() => navigate("/signup")}
-                  >
-                    Sign Up
-                  </button>
-                </>
-              )}
-              {loggedIn && (
-                <>
-                  <span className="navbar-greeting">
-                    Hi, {(currentUser?.email || "User").split("@")[0]}
-                  </span>
-                  <button
-                    className="btn-neon-fill"
-                    onClick={() => navigate("/profile")}
-                  >
-                    Profile
-                  </button>
-                  <button
-                    className="btn-neon-outline"
-                    onClick={() => {
-                      setCurrentUser(null);
-                      localStorage.removeItem("currentUser");
-                      navigate("/");
-                    }}
-                  >
-                    Logout
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="jeeprout-layout">
-          <div className="jeeproute-grid-container">
-            {/* Top Left: Jeep Routes */}
-            <div className="grid-jeep-routes">
-              <div className="sidebar">
-                <div className="plan-card free">
-                  <div className="plan-card-title">
-                    Smart Jeepney Planning for Pampanga Students
-                  </div>
-                  {/* Mode Toggle */}
-                  <div style={{ display: 'flex', gap: 'clamp(6px, 2vw, 10px)', marginBottom: 'clamp(8px, 2vw, 16px)' }}>
-                    <button
-                      className={useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
-                      style={{ flex: 1, fontSize: 'clamp(10px, 2vw, 13px)', padding: 'clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)' }}
-                      onClick={() => setUseJeepneyMode(true)}
-                    >
-                      🚍 Jeepney Routes
-                    </button>
-                    <button
-                      className={!useJeepneyMode ? "btn-neon-fill" : "btn-neon-outline"}
-                      style={{ flex: 1, fontSize: 'clamp(10px, 2vw, 13px)', padding: 'clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px)' }}
-                      onClick={() => setUseJeepneyMode(false)}
-                    >
-                      📍 Town to Town
-                    </button>
-                  </div>
 
-                  {useJeepneyMode ? (
-                    <div className="jeeproute-select-block">
-                      <JeepneyRouteSelector
-                        onRouteSelect={(route) => {
-                          setCurrentRoute(route);
-                          setSelectedJeepneyRoute(route);
-                          setShowJeepneyStops(false); // Reset stops view on new selection
-                        }}
-                        selectedRoute={currentRoute || selectedJeepneyRoute}
-                      />
-                      
-                      <button
-                        className="btn-neon-fill"
-                        style={{ width: '100%', marginTop: 12, marginBottom: 12, fontSize: 14 }}
-                        onClick={handleAddTrip}
-                        disabled={!currentRoute}
-                      >
-                        + Add Jeepney Trip
+            <div className="home-navbar-links" aria-label="Primary">
+              <button className={`home-nav-link${activeView === "home" ? " is-active" : ""}`} onClick={() => switchView("home")}>Home</button>
+              <button className={`home-nav-link${activeView === "routes" ? " is-active" : ""}`} onClick={() => switchView("routes")}>Routes</button>
+              <button className="home-nav-link" onClick={() => navigateWithTransition("/details", "nav-plans")}>Plans</button>
+            </div>
+
+            <div className="header-actions navbar-actions">
+              {!loggedIn ? (
+                <>
+                  <button
+                    className="btn-neon-outline"
+                    onClick={() => navigateWithTransition("/signin", "nav-signin")}
+                    disabled={!!navPendingKey}
+                  >
+                    {withSpinner("nav-signin", "Sign In")}
+                  </button>
+                  <button
+                    className="btn-neon-fill"
+                    onClick={() => navigateWithTransition("/signup", "nav-signup")}
+                    disabled={!!navPendingKey}
+                  >
+                    {withSpinner("nav-signup", "Get Started")}
+                  </button>
+                </>
+              ) : (
+                <div className="nav-user-menu" ref={navUserRef}>
+                  <button
+                    className="nav-user-trigger"
+                    onClick={() => setNavUserOpen(o => !o)}
+                    aria-expanded={navUserOpen}
+                    aria-haspopup="true"
+                  >
+                    Hello, {(currentUser.username || currentUser.email || "User").split("@")[0]} <span className="nav-user-caret">{navUserOpen ? "▲" : "▼"}</span>
+                  </button>
+                  {navUserOpen && (
+                    <div className="nav-user-dropdown">
+                      <button className="nav-user-option" onClick={() => { setNavUserOpen(false); navigateWithTransition("/profile", "nav-profile-btn"); }}>
+                        Profile
                       </button>
-                      
-                    </div>
-                  ) : (
-                    <div className="jeeproute-select-block">
-                      <div className="plan-header">Select Route</div>
-                      <TownSelector
-                        towns={towns}
-                        startTown={startTown}
-                        endTown={endTown}
-                        setStartTown={handleSetStartTown}
-                        setEndTown={handleSetEndTown}
-                        layout="start"
-                      />
-                      <TownSelector
-                        towns={towns}
-                        startTown={startTown}
-                        endTown={endTown}
-                        setStartTown={setStartTown}
-                        setEndTown={handleSetEndTown}
-                        layout="end"
-                      />
-                    </div>
-                  )}
-                  {!useJeepneyMode && (
-                    <div className="jeeproute-actions-row">
-                      <button
-                        className="btn-neon-fill"
-                        disabled={!startTown || !endTown || startTown === endTown}
-                        onClick={() => {
-                          if (!currentUser) {
-                            navigate("/signin");
-                            return;
-                          }
-                          // Only log if user is authenticated
-                          if (currentUser?.id) {
-                            let townName = undefined;
-                            try {
-                              const byId = towns.find(
-                                (t) => String(t.id) === String(endTown)
-                              );
-                              townName = byId?.name;
-                              if (!townName) {
-                                const fallback = getTownById(endTown);
-                                townName = fallback?.name;
-                              }
-                            } catch {}
-                            try {
-                              logTravel({
-                                user_id: currentUser.id,
-                                town_id: endTown,
-                                town_name: townName,
-                                selected_at: new Date().toISOString(),
-                              });
-                            } catch {}
-                          }
-                          setRouteRequested(true);
-                        }}
-                      >
-                        Plan Route
+                      <button className="nav-user-option nav-user-option-signout" onClick={() => { setNavUserOpen(false); setCurrentUser(null); localStorage.removeItem("currentUser"); navigate("/"); }}>
+                        Log Out
                       </button>
                     </div>
                   )}
                 </div>
-                {estimation?.loading && (
-                  <div className="plan-card free" style={{ alignItems: "center" }}>
-                    <Spinner size={52} color="#00d4ff" text="Calculating estimation..." />
-                  </div>
-                )}
+              )}
+            </div>
+          </div>
+        </div>
+
+        {activeView === "home" && (
+        <main className="home-landing-main">
+          <section className="home-hero-section">
+            <div className="home-hero-surface">
+              <div className="home-hero-content">
+                <span className="home-pill">AI-Powered Commute Assistant</span>
+                <h1 className="home-hero-title">
+                  Navigate Your City
+                  <span> Smarter</span>
+                </h1>
+                <p className="home-hero-copy">
+                  Find the best jeepney routes, get real-time fare estimates, and enjoy student discounts - all powered by AI.
+                </p>
+                <div className="home-hero-actions">
+                  <button className="btn-neon-fill" onClick={() => switchView("routes")}>Explore Routes</button>
+                  {!loggedIn && (
+                    <button className="btn-neon-outline" onClick={() => navigateWithTransition("/signup", "hero-signup")} disabled={!!navPendingKey}>{withSpinner("hero-signup", "Create Account")}</button>
+                  )}
+                </div>
               </div>
             </div>
+          </section>
 
-            {/* Top Right: Map (only show in Town to Town mode) */}
-            {!useJeepneyMode && (
-              <div className="grid-map">
-                <Mapbox3DMap 
-                  estimation={estimation} 
-                  selectedJeepneyRoute={null}
-                  key={String(useJeepneyMode) + '-' + String(startTown) + '-' + String(endTown) + '-' + String(routeRequested)}
-                />
+          <section className="home-trust-section home-section-block home-section-block-cool">
+            {loggedIn ? (
+              <>
+                <div className="home-stats-head">
+                  <span className="home-stats-chip">Live Dashboard</span>
+                  <h2>Your Commute Snapshot</h2>
+                  <p>View your recent travel history and live planner calculations.</p>
+                </div>
+                <div className="home-stats-grid">
+                  {homeStatCards.map((card) => (
+                    <article className="home-stat-card" key={card.label}>
+                      <div className="home-stat-icon">{card.icon}</div>
+                      <strong>{card.value}</strong>
+                      <span>{card.label}</span>
+                    </article>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="home-stats-guest" role="status" aria-live="polite">
+                <div className="home-stats-guest-badge">Personalized Insights</div>
+                <h3>Sign up or Log in to see your statistics</h3>
+                <p>
+                  Track completed trips, recent destinations, and your average travel time in one place.
+                </p>
+                <div className="home-stats-guest-actions">
+                  <button className="btn-neon-fill" onClick={() => navigateWithTransition("/signin", "guest-signin")} disabled={!!navPendingKey}>{withSpinner("guest-signin", "Log In")}</button>
+                  <button className="btn-neon-outline" onClick={() => navigateWithTransition("/signup", "guest-signup")} disabled={!!navPendingKey}>{withSpinner("guest-signup", "Sign Up")}</button>
+                </div>
               </div>
             )}
-            {/* Show trip summary in grid-map area for Jeepney Routes mode */}
-            {useJeepneyMode && (
-              <div className="grid-map">
-                {plannedTrips.length > 0 && (
-                  <div style={{
-                    background: '#eaf6ff',
-                    borderRadius: 10,
-                    padding: '16px 18px',
-                    marginBottom: 18,
-                    boxShadow: '0 2px 8px #e0e8f7',
-                  }}>
-                    <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>Trip Summary</div>
-                    <div style={{ display: 'flex', gap: 18, fontSize: 15, marginBottom: 12 }}>
-                      <div><strong>Total Distance:</strong> {totalDistance} km</div>
-                      <div><strong>Total Time:</strong> {totalTime} min</div>
-                      <div><strong>Total Cost:</strong> ₱{totalCost}</div>
-                    </div>
-                    {/* Show stop-by-stop ETAs for each trip */}
-                    {plannedTrips.map((trip, idx) => (
-                      <div key={idx} style={{ marginBottom: 18, background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px #e0e8f7', padding: '12px 14px', border: `2px solid ${trip.hex}`, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <div style={{ fontWeight: 600, color: getReadableRouteColor(trip.hex), fontSize: 15, textShadow: '0 0 2.5px rgba(0, 0, 0, 0.35)' }}>{trip.color} Route: {trip.route}</div>
-                          <button onClick={() => handleRemoveTrip(idx)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: 18, padding: '0 4px', marginTop: -16, marginRight: -10 }}>✕</button>
+          </section>
+
+          <section className="home-guide-section home-section-block home-section-block-warm">
+            <div className="home-guide-head">
+              <span className="home-guide-chip">Easy as 1-2-3-4</span>
+              <h2>How to Use JeepRoute</h2>
+              <p>Get started in seconds with our intuitive interface.</p>
+            </div>
+
+            <div className="home-guide-grid">
+              {onboardingSteps.map((item) => (
+                <article className="home-guide-card" key={item.step}>
+                  <div className="home-guide-meta">
+                    <span className="home-guide-icon">{item.icon}</span>
+                    <span className="home-guide-step">{item.step}</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="home-tips-section home-section-block home-section-block-cool">
+            <div className="home-guide-head">
+              <span className="home-guide-chip">Guidelines</span>
+              <h2>Tips for Smart Commuting</h2>
+              <p>Follow these guidelines for the best experience.</p>
+            </div>
+
+            <div className="home-tips-grid">
+              {smartTips.map((item) => (
+                <article className="home-tip-card" key={item.title}>
+                  <span className="home-tip-icon">{item.icon}</span>
+                  <div className="home-tip-copy">
+                    <h3>{item.title}</h3>
+                    <p>{item.copy}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </main>
+        )}
+
+        {showLegacyPlanner && (
+        <div className="jeeprout-layout">
+          <div className="jeeproute-grid-container route-planner-grid">
+            <div className="grid-jeep-routes route-planner-shell">
+              <div className="route-planner-card">
+                <div className="route-planner-head">
+                  <div className="route-planner-intro">
+                    <span className="route-planner-eyebrow">Legacy Planner</span>
+                    <h2>Plan your town-to-town trip</h2>
+                    <p>
+                      Pick a starting town and destination. Plan your commutes better.
+                    </p>
+                  </div>
+
+                  <div
+                    className={`colored-trip-wallet${showColoredTripPlanner ? " is-open" : ""}${isColoredTripPlannerPinned ? " is-pinned" : ""}`}
+                  >
+                    <button
+                      type="button"
+                      className={`colored-trip-planner-fab${
+                        showColoredTripPlanner ? " is-open" : ""
+                      }`}
+                      onClick={handleToggleColoredTripPlanner}
+                      aria-expanded={showColoredTripPlanner}
+                      aria-controls="colored-trip-planner-panel"
+                      aria-pressed={isColoredTripPlannerPinned}
+                    >
+                      <span className="colored-trip-planner-fab-icon" aria-hidden="true">
+                        ₱
+                      </span>
+                      <span className="colored-trip-planner-fab-copy">
+                        <strong>Trip Wallet</strong>
+                        <small>Allows you to see your planned trips and their costs</small>
+                      </span>
+                      <span className="colored-trip-planner-fab-summary" aria-hidden="true">
+                        <span>{plannedTrips.length} trip{plannedTrips.length === 1 ? "" : "s"}</span>
+                        <strong>₱{totalCost}</strong>
+                      </span>
+                    </button>
+
+                    {showColoredTripPlanner && (
+                      <section
+                        className="colored-trip-planner-panel"
+                        id="colored-trip-planner-panel"
+                        aria-label="Colored trip planner"
+                      >
+                        <div className="colored-trip-planner-header">
+                          <div>
+                            <p className="colored-trip-planner-kicker">Wallet helper</p>
+                            <h3>Stack multiple jeepney routes</h3>
+                            <p>
+                              Choose a colored route to add to your trip.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="colored-trip-planner-close"
+                            onClick={handleCloseColoredTripPlanner}
+                            aria-label="Close colored trip planner"
+                          >
+                            ×
+                          </button>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {tripStats[idx]?.stopEtas?.map((stop, sidx) => (
-                            <div key={sidx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <span className="trip-stop-index" style={{ fontWeight: 600, color: getReadableRouteColor(trip.hex), minWidth: 60, textShadow: '0 0 2.5px rgba(0, 0, 0, 0.35)' }}>{sidx + 1}{['st','nd','rd'][sidx] || 'th'} stop</span>
-                              <span style={{ flex: 1, color: '#2a3441', fontWeight: 500 }}>{stop.name}</span>
-                              <span style={{ color: '#7f94a8', fontSize: 13 }}>ETA: {stop.eta} min</span>
-                            </div>
-                          ))}
+
+                        <JeepneyRouteSelector
+                          onRouteSelect={handleJeepneyRouteSelect}
+                          selectedRoute={selectedColoredRoute}
+                        />
+
+                        <div className="colored-trip-planner-actions">
+                          <button
+                            type="button"
+                            className="btn-neon-fill colored-trip-action"
+                            onClick={handleAddTrip}
+                            disabled={!currentRoute}
+                          >
+                            + Add Jeepney Trip
+                          </button>
                         </div>
+
+                        <div className="colored-trip-planner-metrics">
+                          <article className="colored-trip-metric-card">
+                            <span>Total Distance</span>
+                            <strong>{totalDistance} km</strong>
+                          </article>
+                          <article className="colored-trip-metric-card">
+                            <span>Total Time</span>
+                            <strong>{totalTime} min</strong>
+                          </article>
+                          <article className="colored-trip-metric-card">
+                            <span>Total Cost</span>
+                            <strong>₱{totalCost}</strong>
+                          </article>
+                        </div>
+
+                        {plannedTrips.length > 0 ? (
+                          <div className="colored-trip-planner-stack">
+                            {visibleWalletTrips.map((trip, idx) => {
+                              const tripIndex = idx;
+                              const stopEtas = tripStats[tripIndex]?.stopEtas || [];
+
+                              return (
+                              <article
+                                key={`${trip.color}-${trip.route}-${idx}`}
+                                className="colored-trip-card"
+                                style={{ "--colored-trip-accent": trip.hex }}
+                              >
+                                <div className="colored-trip-card-head">
+                                  <div>
+                                    <p
+                                      className="colored-trip-card-title"
+                                      style={{ color: getReadableRouteColor(trip.hex) }}
+                                    >
+                                      {trip.color} Route
+                                    </p>
+                                    <p className="colored-trip-card-copy">{trip.route}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="colored-trip-card-remove"
+                                    onClick={() => handleRemoveTrip(tripIndex)}
+                                    aria-label={`Remove ${trip.color} route`}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+
+                                <div className="colored-trip-card-stats">
+                                  <span>
+                                    {tripStats[tripIndex]?.distance
+                                      ? `${tripStats[tripIndex].distance.toFixed(2)} km`
+                                      : "0.00 km"}
+                                  </span>
+                                  <span>{tripStats[tripIndex]?.duration || 0} min</span>
+                                  <span>₱{tripStats[tripIndex]?.cost || 0}</span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  className="colored-trip-load-stops-btn"
+                                  onClick={() =>
+                                    setExpandedTripStops((prev) => ({
+                                      ...prev,
+                                      [tripIndex]: !prev[tripIndex],
+                                    }))
+                                  }
+                                >
+                                  {expandedTripStops[tripIndex] ? 'Hide Stops ▲' : 'Load Chosen Stops ▼'}
+                                </button>
+
+                                {expandedTripStops[tripIndex] && stopEtas.length > 0 && (
+                                  <div className="colored-trip-stop-list">
+                                    {stopEtas.map((stop, stopIndex) => (
+                                      <div
+                                        key={`${trip.color}-${stop.name}-${stopIndex}`}
+                                        className="colored-trip-stop-row"
+                                      >
+                                        <span
+                                          className="colored-trip-stop-order"
+                                          style={{ color: getReadableRouteColor(trip.hex) }}
+                                        >
+                                          {stopIndex + 1}
+                                        </span>
+                                        <span className="colored-trip-stop-name">
+                                          {stop.name}
+                                        </span>
+                                        <span className="colored-trip-stop-eta">
+                                          ETA {stop.eta} min
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </article>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="colored-trip-planner-empty">
+                            Pick a color-coded route and add it to your trip stack.
+                          </div>
+                        )}
+
+                        {plannedTrips.length > 2 && (
+                          <button
+                            type="button"
+                            className="colored-trip-stack-toggle"
+                            onClick={() => setShowAllWalletTrips((prev) => !prev)}
+                          >
+                            {showAllWalletTrips
+                              ? "Show fewer saved trips"
+                              : `Show all saved trips (${plannedTrips.length})`}
+                          </button>
+                        )}
+
+                        {showJeepneyStops &&
+                          selectedJeepneyRoute &&
+                          selectedJeepneyRoute.stops &&
+                          selectedJeepneyRoute.stops.length >= 2 && (
+                            <JeepneyStopsEstimation
+                              key={selectedJeepneyRoute.color || selectedJeepneyRoute.route}
+                              route={selectedJeepneyRoute}
+                              onBack={() => setShowJeepneyStops(false)}
+                            />
+                          )}
+                      </section>
+                    )}
+                  </div>
+                </div>
+
+                <div className="route-town-boxes">
+                  <button
+                    type="button"
+                    className={`route-town-box${
+                      openTownPicker === "start" ? " active" : ""
+                    }`}
+                    onClick={() => openPlannerTownPicker("start")}
+                    aria-expanded={openTownPicker === "start"}
+                  >
+                    <span className="route-town-box-label">Start town</span>
+                    <span
+                      className={`route-town-box-value${
+                        selectedStartTown ? "" : " placeholder"
+                      }`}
+                    >
+                      {selectedStartTown?.name || "Choose your origin"}
+                    </span>
+                    <span className="route-town-box-meta">
+                      {towns.length > 0
+                        ? "Tap to browse available towns"
+                        : "Loading towns..."}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`route-town-box${
+                      openTownPicker === "end" ? " active" : ""
+                    }`}
+                    onClick={() => openPlannerTownPicker("end")}
+                    aria-expanded={openTownPicker === "end"}
+                  >
+                    <span className="route-town-box-label">End town</span>
+                    <span
+                      className={`route-town-box-value${
+                        selectedEndTown ? "" : " placeholder"
+                      }`}
+                    >
+                      {selectedEndTown?.name || "Choose your destination"}
+                    </span>
+                    <span className="route-town-box-meta">
+                      {towns.length > 0
+                        ? "Tap to browse available towns"
+                        : "Loading towns..."}
+                    </span>
+                  </button>
+                </div>
+
+                {openTownPicker && (
+                  <div
+                    className="route-town-picker"
+                    role="dialog"
+                    aria-modal="false"
+                    aria-label={
+                      openTownPicker === "start"
+                        ? "Select start town"
+                        : "Select end town"
+                    }
+                  >
+                    <div className="route-town-picker-header">
+                      <div>
+                        <p className="route-town-picker-kicker">Town picker</p>
+                        <h3>
+                          {openTownPicker === "start"
+                            ? "Select your starting town"
+                            : "Select your destination town"}
+                        </h3>
                       </div>
-                    ))}
+                      <button
+                        type="button"
+                        className="route-town-picker-close"
+                        onClick={() => setOpenTownPicker(null)}
+                        aria-label="Close town picker"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    <label className="route-town-search">
+                      <span>Search towns</span>
+                      <input
+                        type="text"
+                        value={townSearchTerm}
+                        onChange={(event) => setTownSearchTerm(event.target.value)}
+                        placeholder="Search by town name"
+                      />
+                    </label>
+
+                    <div className="route-town-list">
+                      {filteredTowns.length > 0 ? (
+                        filteredTowns.map((town) => {
+                          const isSelected =
+                            openTownPicker === "start"
+                              ? String(startTown) === String(town.id)
+                              : String(endTown) === String(town.id);
+
+                          return (
+                            <button
+                              type="button"
+                              key={town.id}
+                              className={`route-town-option${
+                                isSelected ? " selected" : ""
+                              }`}
+                              onClick={() =>
+                                handlePlannerTownPick(openTownPicker, town.id)
+                              }
+                            >
+                              <span className="route-town-option-name">
+                                {town.name}
+                              </span>
+                              <span className="route-town-option-meta">
+                                {isSelected ? "Selected" : "Tap to select"}
+                              </span>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="route-town-empty">
+                          No towns match your search.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
-                {/* Show jeepney stops estimation after planning in jeepney mode */}
-                {showJeepneyStops && selectedJeepneyRoute && selectedJeepneyRoute.stops && selectedJeepneyRoute.stops.length >= 2 && (
-                  <JeepneyStopsEstimation 
-                    key={selectedJeepneyRoute.color || selectedJeepneyRoute.route} 
-                    route={selectedJeepneyRoute} 
-                    onBack={() => setShowJeepneyStops(false)}
-                  />
+
+                <div className="route-planner-footer">
+                  <p className="route-planner-summary">
+                    {canPlanTownRoute
+                      ? `${selectedStartTown?.name} to ${selectedEndTown?.name}`
+                      : startTown && endTown && String(startTown) === String(endTown)
+                        ? "Pick two different towns to continue."
+                        : "Select a start and end town to enable route planning."}
+                  </p>
+                  <button
+                    className="btn-neon-fill route-plan-button"
+                    disabled={!canPlanTownRoute}
+                    onClick={handlePlanTownRoute}
+                  >
+                    Plan Route
+                  </button>
+                </div>
+
+                {estimation?.loading && (
+                  <div className="route-planner-loading">
+                    <Spinner
+                      size={48}
+                      color="#00d4ff"
+                      text="Calculating estimation..."
+                    />
+                  </div>
                 )}
+
+                <section className="route-map-panel">
+                  <div className="route-map-panel-header">
+                    <div>
+                      <p className="route-map-panel-kicker">Map section</p>
+                      <h3>Mapbox route preview</h3>
+                    </div>
+                    <p className="route-map-panel-copy">
+                      {routeRequested && canPlanTownRoute
+                        ? `${selectedStartTown?.name || "Start"} to ${
+                            selectedEndTown?.name || "Destination"
+                          }`
+                        : "The map appears here after you plan a route."}
+                    </p>
+                  </div>
+                  <div className="route-map-panel-body">
+                    <Mapbox3DMap
+                      estimation={estimation}
+                      selectedJeepneyRoute={null}
+                      key={`${startTown}-${endTown}-${routeRequested}`}
+                    />
+                  </div>
+                </section>
               </div>
-            )}
+            </div>
 
             {/* Bottom: Features Container */}
             <div className="grid-features">
@@ -1047,60 +1704,104 @@ function Homescreen({ currentUser, setCurrentUser }) {
             <div className="grid-ask-ai">
               <div className="ask-ai-header">Ask AI</div>
               <div className="ask-ai-content">
-                {currentUser?.is_premium && estimation && !estimation.loading ? (
-                  <>
-                    <button
-                      className="btn-neon-fill"
-                      style={{ width: '100%', fontSize: 24, padding: '8px' }}
-                      onClick={() => {
-                        if (!estimation || estimation.loading) return;
-                        setActiveFeature('ai');
-                      }}
-                      disabled={aiLoading || !estimation || estimation.loading}
-                    >
-                      {aiLoading ? '⏳' : '🤖'}
-                    </button>
-                    {aiSuggestion && (
-                      <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text)', textAlign: 'center' }}>
-                        <strong>{aiSuggestion.window || 'N/A'}</strong>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {currentUser && !currentUser.is_premium ? (
-                      <>
-                        <button
-                          className="btn-neon-fill"
-                          style={{ width: '100%', fontSize: 24, padding: '8px' }}
-                          onClick={() => navigate('/details')}
-                          disabled={aiLoading}
-                        >
-                          🤖
-                        </button>
-                        <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text)', textAlign: 'center' }}>
-                          <strong>Unlock AI guidance with JeepRoute Plus</strong>
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 10 }}>
-                        <span style={{ fontSize: '2.5rem' }}>🤖</span>
-                        <p style={{ marginTop: 4 }}>Premium</p>
-                      </div>
-                    )}
-                  </>
-                )}
+                <button
+                  type="button"
+                  className="ask-ai-launch-btn"
+                  onClick={handleAskAIButton}
+                >
+                  {currentUser ? (isChatOpen ? "Hide AI Chat" : "Open AI Chat") : "Sign In to Use AI Chat"}
+                </button>
+                <p className="ask-ai-launch-copy">
+                  {currentUser
+                    ? "Chat opens as a floating panel so it won't take grid space."
+                    : "Sign in or sign up first to open the AI chat panel."}
+                </p>
               </div>
             </div>
+
+            {isChatOpen && currentUser && (
+              <div className="ask-ai-float-chat" role="dialog" aria-label="AI chat panel">
+                <div className="ask-ai-float-head">
+                  <p className="ask-ai-float-title">JeepRoute AI Chat</p>
+                  <button
+                    type="button"
+                    className="ask-ai-float-close"
+                    aria-label="Close AI chat"
+                    onClick={() => setIsChatOpen(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="ask-ai-chat-wrap">
+                  <div className="ask-ai-chat-window" aria-live="polite">
+                    {chatMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`ask-ai-msg ${msg.role === "user" ? "is-user" : "is-bot"}`}
+                      >
+                        <div className="ask-ai-bubble">{msg.text}</div>
+                        <span className="ask-ai-msg-time">{msg.time}</span>
+                      </div>
+                    ))}
+                    {chatSending && (
+                      <div className="ask-ai-msg is-bot">
+                        <div className="ask-ai-bubble">Typing...</div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                  <div className="ask-ai-composer">
+                    <input
+                      type="text"
+                      className="ask-ai-input"
+                      placeholder="Type your message..."
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSendTempChat();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="ask-ai-send"
+                      onClick={handleSendTempChat}
+                      disabled={chatSending || !chatInput.trim()}
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+        )}
+
+        {showLegacyPlanner && (
+          <button
+            type="button"
+            className={`ask-ai-corner-fab${isChatOpen ? " is-hidden" : ""}`}
+            onClick={handleAskAIButton}
+            aria-label={currentUser ? "Open AI chat" : "Sign in to use AI chat"}
+          >
+            <span className="ask-ai-corner-fab-icon" aria-hidden="true">💬</span>
+            <span className="ask-ai-corner-fab-text">Chat</span>
+          </button>
+        )}
       </div>
     </>
   );
 }
 
 // Mapbox 3D Map Component
-const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || 'pk.eyJ1IjoiamFwdXJpIiwiYSI6ImNtampoeW10czIxMW8zZHF4dTE2cGJ5bHMifQ.vcz9vRGxvmuiRYQlO8iaXg';
+const envMapboxToken = process.env.REACT_APP_MAPBOX_TOKEN;
+const MAPBOX_TOKEN =
+  envMapboxToken && envMapboxToken !== "your_token_here"
+    ? envMapboxToken
+    : "pk.eyJ1IjoiamFwdXJpIiwiYSI6ImNtampoeW10czIxMW8zZHF4dTE2cGJ5bHMifQ.vcz9vRGxvmuiRYQlO8iaXg";
 
 function Mapbox3DMap({ estimation, selectedJeepneyRoute }) {
   const mapContainer = useRef(null);

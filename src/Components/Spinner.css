@@ -5,6 +5,28 @@
   justify-content: center;
   min-height: 60px;
 }
+
+.spinner-container.spinner-inline {
+  min-height: 0;
+  display: inline-flex;
+  flex-direction: row;
+}
+
+.spinner-container.spinner-inline .spinner-inner {
+  border-width: 2px;
+  box-shadow: none;
+}
+
+.spinner-container.spinner-inline .spinner-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+
+.spinner-container.spinner-inline .spinner-text {
+  margin-top: 0;
+}
+
 .spinner-outer {
   position: relative;
   display: flex;

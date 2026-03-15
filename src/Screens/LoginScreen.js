@@ -29,43 +29,54 @@ function LoginScreen({ setCurrentUser }) {
   };
 
   return (
-    <div className="login-wrapper">
-      <button className="floating-back-btn" onClick={() => navigate("/")}>
+    <div className="auth-page">
+      <button className="auth-back-btn" onClick={() => navigate("/")}>
         ← Home
       </button>
-      <div className="login-card">
-        <h2 className="login-title">
-          Welcome to <span className="brand">JeepRoute</span>
+      <div className="auth-card">
+        <div className="auth-badge"><svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-geo-alt" viewBox="0 0 16 16"><path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A32 32 0 0 1 8 14.58a32 32 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10"/><path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4m0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg></div>
+        <h2 className="auth-title">
+          Welcome back to <span className="auth-brand">JeepRoute</span>
         </h2>
-        <form onSubmit={handleLogin} className="login-form">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="login-input"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="login-input"
-          />
-          <button type="submit" className="login-btn">
-            Login
+        <p className="auth-subtitle">Sign in to continue your commute planning.</p>
+
+        <form onSubmit={handleLogin} className="auth-form">
+          <div className="auth-form-group">
+            <label className="auth-label">Username</label>
+            <input
+              type="text"
+              placeholder="juan dela cruz"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="auth-input"
+            />
+          </div>
+
+          <div className="auth-form-group">
+            <label className="auth-label">Password</label>
+            <input
+              type="password"
+              placeholder="********"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="auth-input"
+            />
+          </div>
+
+          <button type="submit" className="auth-submit-btn">
+            Sign In
           </button>
         </form>
 
         {error && (
-          <p className="error-msg" style={{ color: "#f55", marginTop: 10 }}>
+          <p className="auth-error-msg" style={{ color: "#cf2d2d", marginTop: 10 }}>
             {error}
           </p>
         )}
 
-        <div className="login-footer">
+        <div className="auth-footer">
           Don't have an account?{" "}
-          <span className="signup-link" onClick={() => navigate("/signup")}>
+          <span className="auth-link" onClick={() => navigate("/signup")}>
             Sign Up
           </span>
         </div>
