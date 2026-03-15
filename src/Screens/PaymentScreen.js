@@ -15,40 +15,12 @@ function PaymentScreen({ currentUser, token }) {
   const loggedIn = !!currentUser;
   const planType = location.state?.plan || "plus";
 
-<<<<<<< HEAD
   const fetchSubscriptionStatus = useCallback(async () => {
     if (!currentUser || !token) {
       navigate("/signin", { state: { redirectTo: "/payment" } });
       return;
     }
 
-    try {
-      const response = await authFetch(
-        `${API_BASE_URL}/api/subscription/status/`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          credentials: "include",
-        },
-        navigate
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        setSubscriptionStatus(data.status);
-      }
-    } catch (err) {
-      console.error("Failed to fetch subscription status:", err);
-    }
-  }, [currentUser, token, navigate]);
-
-  useEffect(() => {
-    fetchSubscriptionStatus();
-  }, [fetchSubscriptionStatus]);
-=======
-  const fetchSubscriptionStatus = useCallback(async () => {
-    if (!currentUser || !token) return;
->>>>>>> frontend-dev
-    
     try {
       const response = await authFetch(
         `${API_BASE_URL}/api/subscription/status/`,
