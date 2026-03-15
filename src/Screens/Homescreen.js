@@ -45,7 +45,7 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
     {
       id: "welcome",
       role: "assistant",
-      text: "Hi! I am JeepRoute AI Chat. This is a temporary chat UI while backend integration is in progress.",
+      text: "Hi! I'm JeepRoute AI Chat. I'm here to help you with commuting questions about jeepney routes, fares, schedules, and travel tips. What can I help you with?",
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -173,7 +173,7 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
     }
   };
 
-  const handleSendTempChat = () => {
+  const handleSendTempChat = async () => {
     const trimmed = chatInput.trim();
     if (!trimmed || chatSending) return;
     if (!currentUser) {
@@ -191,26 +191,63 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
     setChatInput("");
     setChatSending(true);
 
-    const lower = trimmed.toLowerCase();
-    let reply = "Thanks for your message. Backend AI chat is not connected yet, but this UI is ready for integration.";
-    if (lower.includes("fare") || lower.includes("bayad")) {
-      reply = "I can help with fare guidance soon. For now, check route details and payment plans while backend chat is being connected.";
-    } else if (lower.includes("traffic") || lower.includes("eta") || lower.includes("time")) {
-      reply = "Live ETA and traffic answers will come from backend AI later. This temporary chat can already receive/send messages.";
-    } else if (lower.includes("route") || lower.includes("jeep")) {
-      reply = "Route suggestions will be available once AI chat API is connected. You can still plan routes from the Routes section now.";
-    }
+    try {
+      // Prepare conversation history for context
+      const conversationHistory = chatMessages
+        .filter(msg => msg.id !== "welcome") // Exclude welcome message
+        .map(msg => ({
+          role: msg.role === "user" ? "user" : "assistant",
+          text: msg.text
+        }));
 
-    window.setTimeout(() => {
+      // Call the AI chat API
+      const response = await fetch(`${API_BASE_URL}/api/ai-chat/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          message: trimmed,
+          conversation_history: conversationHistory,
+        }),
+      });
+
+      let botReply = "Sorry but this is a commuting app";
+      let isSuccess = false;
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          botReply = data.message || botReply;
+          isSuccess = true;
+        } else {
+          botReply = data.message || data.error || botReply;
+        }
+      } else {
+        botReply = "Unable to reach AI service. Please try again.";
+      }
+
+      // Add bot response to messages
       const botMsg = {
         id: `bot-${Date.now()}`,
         role: "assistant",
-        text: reply,
+        text: botReply,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setChatMessages((prev) => [...prev, botMsg]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      const botMsg = {
+        id: `bot-${Date.now()}`,
+        role: "assistant",
+        text: "Sorry, I encountered an error. Please try again.",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setChatMessages((prev) => [...prev, botMsg]);
+    } finally {
       setChatSending(false);
-    }, 450);
+    }
   };
 
   const handleAskAIButton = () => {
