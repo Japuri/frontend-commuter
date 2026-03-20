@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../utils/api';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import Spinner from '../Components/Spinner';
 
 function SignIn({ onAuth }) {
@@ -31,12 +32,12 @@ function SignIn({ onAuth }) {
     */
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/signin/`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/signin/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email, password })
-      });
+      }, 15000); // 15 second timeout for auth
       const data = await res.json();
       if (res.ok) {
         // Store JWT tokens in localStorage
