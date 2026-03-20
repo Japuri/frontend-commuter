@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Spinner from "../Components/Spinner";
 import JeepneyRouteSelector from "../Components/JeepneyRouteSelector";
 import JeepneyStopsEstimation from "../Components/JeepneyStopsEstimation";
@@ -295,6 +295,13 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
     history: [],
   });
 
+  // Vehicle type and fuel calculator state
+  const [vehicleType, setVehicleType] = useState("car"); // "car" or "motor"
+  const [carType, setCarType] = useState("sedan"); // sedan, SUV, van, crossover, pickup truck
+  const [motorType, setMotorType] = useState("standard"); // sports bike, cruiser, cafe racer, standard, big bike, scooter
+  const [gasolinePrice, setGasolinePrice] = useState(""); // price per liter in pesos
+  const [fuelCalculation, setFuelCalculation] = useState(null); // {distance, fuelNeeded, totalCost}
+
   // Persist town selections in sessionStorage
   const handleSetStartTown = (val) => {
     setStartTown(val);
@@ -323,7 +330,58 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
       console.error('Error logging trip:', e);
     }
   };
+
+  // Calculate fuel costs based on vehicle type and gasoline price
+  const calculateFuelCost = useCallback((distance, pricePerLiter) => {
+    if (!distance || !pricePerLiter || distance <= 0 || pricePerLiter <= 0) {
+      return null;
+    }
+
+    const numPrice = parseFloat(pricePerLiter);
+    if (isNaN(numPrice)) return null;
+
+    // Fuel consumption estimates based on vehicle type (km per liter)
+    let fuelConsumption = 10; // default
+    if (vehicleType === "car") {
+      if (carType === "sedan") fuelConsumption = 13;
+      else if (carType === "SUV") fuelConsumption = 9;
+      else if (carType === "van") fuelConsumption = 8;
+      else if (carType === "crossover") fuelConsumption = 11;
+      else if (carType === "pickup truck") fuelConsumption = 8;
+    } else if (vehicleType === "motor") {
+      if (motorType === "sports bike") fuelConsumption = 20;
+      else if (motorType === "cruiser") fuelConsumption = 18;
+      else if (motorType === "cafe racer") fuelConsumption = 19;
+      else if (motorType === "standard") fuelConsumption = 21;
+      else if (motorType === "big bike") fuelConsumption = 15;
+      else if (motorType === "scooter") fuelConsumption = 25;
+    }
+
+    const fuelNeeded = distance / fuelConsumption;
+    const totalCost = fuelNeeded * numPrice;
+
+    return {
+      distance: distance.toFixed(2),
+      fuelConsumption,
+      fuelNeeded: fuelNeeded.toFixed(2),
+      totalCost: totalCost.toFixed(2),
+      vehicleType,
+      carType: vehicleType === "car" ? carType : null,
+      motorType: vehicleType === "motor" ? motorType : null,
+    };
+  }, [vehicleType, carType, motorType]);
+
+  // Update fuel calculation when gasoline price changes
+  const handleGasolinePriceChange = (price) => {
+    setGasolinePrice(price);
+    if (estimation?.distanceKm && price) {
+      const result = calculateFuelCost(estimation.distanceKm, price);
+      setFuelCalculation(result);
+    }
+  };
+
   const [towns, setTowns] = useState([]);
+
   const [estimation, setEstimation] = useState(null);
   const [routeRequested, setRouteRequested] = useState(false);
   const navigate = useNavigate();
@@ -672,6 +730,16 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
     if (eTown && eTown !== endTown) setEndTown(eTown);
     // If both towns are present, estimation effect will run
   }, [startTown, endTown]);
+
+  // Recalculate fuel cost when estimation or gasoline price changes
+  useEffect(() => {
+    if (estimation?.distanceKm && gasolinePrice) {
+      const result = calculateFuelCost(estimation.distanceKm, gasolinePrice);
+      setFuelCalculation(result);
+    } else {
+      setFuelCalculation(null);
+    }
+  }, [estimation?.distanceKm, gasolinePrice, calculateFuelCost]);
 
   // Congratulatory popup modal
   const CongratsModal = () =>
@@ -1444,6 +1512,140 @@ function Homescreen({ currentUser, setCurrentUser, initialView = "home" }) {
                         : "Loading towns..."}
                     </span>
                   </button>
+                </div>
+
+                {/* Fuel Calculator Section */}
+                <div className="fuel-calculator-section">
+                  <div className="fuel-calculator-header">
+                    <p className="fuel-calculator-kicker">Fuel Cost Estimator</p>
+                    <h3>Calculate trip fuel expenses</h3>
+                  </div>
+
+                  {/* Vehicle Type Selection */}
+                  <div className="fuel-calculator-group">
+                    <label className="fuel-calculator-label">Vehicle Type</label>
+                    <div className="fuel-vehicle-type-buttons">
+                      <button
+                        type="button"
+                        className={`fuel-type-btn${vehicleType === "car" ? " active" : ""}`}
+                        onClick={() => {
+                          setVehicleType("car");
+                          setCarType("sedan");
+                        }}
+                      >
+                        🚗 Car
+                      </button>
+                      <button
+                        type="button"
+                        className={`fuel-type-btn${vehicleType === "motor" ? " active" : ""}`}
+                        onClick={() => {
+                          setVehicleType("motor");
+                          setMotorType("standard");
+                        }}
+                      >
+                        🏍️ Motorcycle
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Car Type Selection */}
+                  {vehicleType === "car" && (
+                    <div className="fuel-calculator-group">
+                      <label className="fuel-calculator-label">Car Type</label>
+                      <div className="fuel-car-type-buttons">
+                        {["sedan", "SUV", "van", "crossover", "pickup truck"].map((type) => (
+                          <button
+                            key={type}
+                            type="button"
+                            className={`fuel-car-type-btn${carType === type ? " active" : ""}`}
+                            onClick={() => setCarType(type)}
+                          >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Motorcycle Type Selection */}
+                  {vehicleType === "motor" && (
+                    <div className="fuel-calculator-group">
+                      <label className="fuel-calculator-label">Motorcycle Type</label>
+                      <div className="fuel-motor-type-buttons">
+                        {["sports bike", "cruiser", "cafe racer", "standard", "big bike", "scooter"].map((type) => (
+                          <button
+                            key={type}
+                            type="button"
+                            className={`fuel-motor-type-btn${motorType === type ? " active" : ""}`}
+                            onClick={() => setMotorType(type)}
+                          >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gasoline Price Input */}
+                  <div className="fuel-calculator-group">
+                    <label className="fuel-calculator-label">
+                      Gasoline Price per Liter (₱)
+                    </label>
+                    <input
+                      type="number"
+                      className="fuel-price-input"
+                      placeholder="Enter price per liter (e.g., 58.50)"
+                      value={gasolinePrice}
+                      onChange={(e) => handleGasolinePriceChange(e.target.value)}
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+
+                  {/* Fuel Cost Display */}
+                  {fuelCalculation && estimation?.distanceKm && (
+                    <div className="fuel-calculation-result">
+                      <div className="fuel-result-header">
+                        <span className="fuel-result-icon">⛽</span>
+                        <span className="fuel-result-title">Trip Fuel Estimate</span>
+                      </div>
+                      <div className="fuel-result-grid">
+                        <div className="fuel-result-item">
+                          <span className="fuel-result-label">Distance</span>
+                          <span className="fuel-result-value">{fuelCalculation.distance} km</span>
+                        </div>
+                        <div className="fuel-result-item">
+                          <span className="fuel-result-label">Vehicle Type</span>
+                          <span className="fuel-result-value">
+                            {vehicleType === "car" ? carType : motorType}
+                          </span>
+                        </div>
+                        <div className="fuel-result-item">
+                          <span className="fuel-result-label">Fuel Consumption</span>
+                          <span className="fuel-result-value">{fuelCalculation.fuelConsumption} km/L</span>
+                        </div>
+                        <div className="fuel-result-item">
+                          <span className="fuel-result-label">Fuel Needed</span>
+                          <span className="fuel-result-value">{fuelCalculation.fuelNeeded} L</span>
+                        </div>
+                        <div className="fuel-result-item">
+                          <span className="fuel-result-label">Price per Liter</span>
+                          <span className="fuel-result-value">₱{parseFloat(gasolinePrice).toFixed(2)}</span>
+                        </div>
+                        <div className="fuel-result-item highlight">
+                          <span className="fuel-result-label">Total Cost</span>
+                          <span className="fuel-result-value">₱{fuelCalculation.totalCost}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!fuelCalculation && gasolinePrice && (
+                    <div className="fuel-calculation-empty">
+                      <span className="fuel-empty-icon">📍</span>
+                      <p>Plan a route to calculate fuel expenses</p>
+                    </div>
+                  )}
                 </div>
 
                 {openTownPicker && (

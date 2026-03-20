@@ -5439,3 +5439,357 @@ select {
     align-items: flex-start;
   }
 }
+
+/* --- Fuel Calculator Styles --- */
+.fuel-calculator-section {
+  margin-top: 24px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 22px;
+  border: 1px solid rgba(119, 137, 165, 0.22);
+  box-shadow: 0 16px 32px rgba(28, 44, 74, 0.05);
+}
+
+.fuel-calculator-header {
+  margin-bottom: 20px;
+}
+
+.fuel-calculator-kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #f07818;
+  text-transform: uppercase;
+  margin: 0 0 6px 0;
+  display: block;
+}
+
+.fuel-calculator-section h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #16253d;
+}
+
+.fuel-calculator-group {
+  margin-bottom: 20px;
+}
+
+.fuel-calculator-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #16253d;
+  margin-bottom: 10px;
+}
+
+/* Vehicle Type Buttons */
+.fuel-vehicle-type-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.fuel-type-btn {
+  padding: 12px 16px;
+  border: 1px solid rgba(119, 137, 165, 0.22);
+  background: #ffffff;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #16253d;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.fuel-type-btn:hover {
+  border-color: rgba(19, 93, 203, 0.42);
+  box-shadow: 0 8px 16px rgba(18, 84, 189, 0.12);
+  transform: translateY(-2px);
+}
+
+.fuel-type-btn.active {
+  background: #135dcb;
+  color: #ffffff;
+  border-color: #135dcb;
+  box-shadow: 0 12px 24px rgba(18, 84, 189, 0.18);
+}
+
+/* Car Type Buttons */
+.fuel-car-type-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.fuel-car-type-btn {
+  padding: 10px 12px;
+  border: 1px solid rgba(119, 137, 165, 0.22);
+  background: #ffffff;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16253d;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fuel-car-type-btn:hover {
+  border-color: rgba(19, 93, 203, 0.42);
+  color: #135dcb;
+  box-shadow: 0 4px 12px rgba(18, 84, 189, 0.1);
+}
+
+.fuel-car-type-btn.active {
+  background: #135dcb;
+  color: #ffffff;
+  border-color: #135dcb;
+}
+
+/* Motorcycle Type Buttons */
+.fuel-motor-type-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.fuel-motor-type-btn {
+  padding: 10px 12px;
+  border: 1px solid rgba(119, 137, 165, 0.22);
+  background: #ffffff;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16253d;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fuel-motor-type-btn:hover {
+  border-color: rgba(19, 93, 203, 0.42);
+  color: #135dcb;
+  box-shadow: 0 4px 12px rgba(18, 84, 189, 0.1);
+}
+
+.fuel-motor-type-btn.active {
+  background: #135dcb;
+  color: #ffffff;
+  border-color: #135dcb;
+}
+
+/* Gasoline Price Input */
+.fuel-price-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(119, 137, 165, 0.22);
+  background: #ffffff;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #16253d;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+}
+
+.fuel-price-input::placeholder {
+  color: #8b97aa;
+}
+
+.fuel-price-input:focus {
+  outline: none;
+  border-color: #135dcb;
+  box-shadow: 0 8px 20px rgba(18, 84, 189, 0.12);
+}
+
+/* Fuel Calculation Result */
+.fuel-calculation-result {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f5f7fa;
+  border: 1px solid rgba(19, 93, 203, 0.15);
+  border-radius: 16px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fuel-result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(19, 93, 203, 0.2);
+}
+
+.fuel-result-icon {
+  font-size: 24px;
+}
+
+.fuel-result-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #135dcb;
+}
+
+.fuel-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.fuel-result-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(119, 137, 165, 0.15);
+}
+
+.fuel-result-item.highlight {
+  background: #135dcb;
+  border: 1px solid #135dcb;
+}
+
+.fuel-result-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6a788e;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.fuel-result-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #16253d;
+  word-wrap: break-word;
+}
+
+.fuel-result-item.highlight .fuel-result-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.fuel-result-item.highlight .fuel-result-value {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+/* Empty State */
+.fuel-calculation-empty {
+  margin-top: 16px;
+  padding: 24px;
+  text-align: center;
+  background: #f5f7fa;
+  border: 1px dashed rgba(19, 93, 203, 0.3);
+  border-radius: 16px;
+}
+
+.fuel-empty-icon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.fuel-calculation-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: #6a788e;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .fuel-calculator-section {
+    padding: 16px;
+  }
+
+  .fuel-vehicle-type-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fuel-car-type-buttons,
+  .fuel-motor-type-buttons {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+  }
+
+  .fuel-car-type-btn,
+  .fuel-motor-type-btn {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .fuel-result-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .fuel-result-item {
+    padding: 10px;
+  }
+
+  .fuel-result-label {
+    font-size: 11px;
+  }
+
+  .fuel-result-value {
+    font-size: 14px;
+  }
+
+  .fuel-result-item.highlight .fuel-result-value {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fuel-calculator-section {
+    padding: 12px;
+    margin-top: 16px;
+  }
+
+  .fuel-calculator-section h3 {
+    font-size: 16px;
+  }
+
+  .fuel-vehicle-type-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .fuel-car-type-buttons,
+  .fuel-motor-type-buttons {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 6px;
+  }
+
+  .fuel-result-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .fuel-type-btn {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
